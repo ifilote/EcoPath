@@ -10,11 +10,13 @@ namespace EcoPath.Areas.Identity.Pages.Account
     public class LoginModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ILogger<LoginModel> logger)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
         }
 
@@ -30,9 +32,9 @@ namespace EcoPath.Areas.Identity.Pages.Account
 
         public class InputModel
         {
-            [Required(ErrorMessage = "Email-ul este obligatoriu")]
-            [EmailAddress(ErrorMessage = "Adresa de email nu este validă")]
-            public string Email { get; set; } = default!;
+            [Required(ErrorMessage = "Email-ul sau username-ul este obligatoriu")]
+            [Display(Name = "Email sau Username")]
+            public string EmailOrUsername { get; set; } = default!;
 
             [Required(ErrorMessage = "Parola este obligatorie")]
             [DataType(DataType.Password)]
@@ -67,11 +69,24 @@ namespace EcoPath.Areas.Identity.Pages.Account
 
             if (ModelState.IsValid)
             {
-                var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+                // Determinăm dacă input-ul este email sau username
+                string userName = Input.EmailOrUsername;
+                
+                // Dacă pare a fi email, găsim username-ul asociat
+                if (Input.EmailOrUsername.Contains("@"))
+                {
+                    var user = await _userManager.FindByEmailAsync(Input.EmailOrUsername);
+                    if (user != null)
+                    {
+                        userName = user.UserName!;
+                    }
+                }
+
+                var result = await _signInManager.PasswordSignInAsync(userName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
                 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("Utilizatorul s-a autentificat.");
+                    _logger.LogInformation("Utilizatorul s-a autentificat cu succes.");
                     return LocalRedirect(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
@@ -85,7 +100,7 @@ namespace EcoPath.Areas.Identity.Pages.Account
                 }
                 else
                 {
-                    ModelState.AddModelError(string.Empty, "Încercare de autentificare invalidă.");
+                    ModelState.AddModelError(string.Empty, "Email/Username sau parolă incorecte.");
                     return Page();
                 }
             }

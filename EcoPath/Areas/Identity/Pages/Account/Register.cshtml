@@ -20,9 +20,20 @@
                     </h5>
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
+                    <!-- Username -->
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.UserName" class="form-control" autocomplete="username" 
+                               aria-required="true" placeholder="numeutilizator" />
+                        <label asp-for="Input.UserName">Nume utilizator</label>
+                        <span asp-validation-for="Input.UserName" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            Acest nume va fi vizibil public (min. 3 caractere)
+                        </small>
+                    </div>
+
                     <!-- Email -->
                     <div class="form-floating mb-3">
-                        <input asp-for="Input.Email" class="form-control" autocomplete="username" 
+                        <input asp-for="Input.Email" class="form-control" autocomplete="email" 
                                aria-required="true" placeholder="nume@exemplu.com" />
                         <label asp-for="Input.Email">Email</label>
                         <span asp-validation-for="Input.Email" class="text-danger"></span>

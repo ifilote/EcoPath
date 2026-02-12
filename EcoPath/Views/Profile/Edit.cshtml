@@ -1,0 +1,174 @@
+@model EcoPath.Controllers.ProfileEditViewModel
+@{
+    ViewData["Title"] = "Editează Profilul";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">
+                    <i class="bi bi-pencil-square text-success me-2"></i>Editează Profilul
+                </h1>
+                <p class="text-muted">Actualizează informațiile tale personale</p>
+            </div>
+
+            <!-- Edit Form Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-gear me-2"></i>Informații Personale</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- UserName -->
+                        <div class="mb-4">
+                            <label asp-for="UserName" class="form-label fw-semibold">
+                                <i class="bi bi-person-badge text-success me-2"></i>Nume utilizator
+                            </label>
+                            <input asp-for="UserName" class="form-control form-control-lg" placeholder="Introdu numele de utilizator" />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="bi bi-lightbulb me-1"></i>
+                                Acest nume va fi vizibil public în clasamente și statistici
+                            </div>
+                        </div>
+
+                        <!-- Email (Read Only) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-envelope text-success me-2"></i>Adresă Email
+                            </label>
+                            <input asp-for="Email" class="form-control form-control-lg" readonly />
+                            <div class="form-text">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Email-ul nu poate fi modificat din această pagină
+                            </div>
+                        </div>
+
+                        <!-- City -->
+                        <div class="mb-4">
+                            <label asp-for="City" class="form-label fw-semibold">
+                                <i class="bi bi-geo-alt-fill text-success me-2"></i>Oraș
+                            </label>
+                            <input asp-for="City" class="form-control form-control-lg" placeholder="Introdu orașul tău" />
+                            <span asp-validation-for="City" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="bi bi-lightbulb me-1"></i>
+                                Ne ajută să îți oferim informații relevante despre sesiuni locale
+                            </div>
+                        </div>
+
+                        <!-- Weight -->
+                        <div class="mb-4">
+                            <label asp-for="Weight" class="form-label fw-semibold">
+                                <i class="bi bi-heart-pulse text-success me-2"></i>Greutate (kg)
+                            </label>
+                            <input asp-for="Weight" type="number" step="0.1" class="form-control form-control-lg" 
+                                   placeholder="Ex: 70.5" min="0" max="300" />
+                            <span asp-validation-for="Weight" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="bi bi-lock me-1"></i>
+                                Folosit pentru calculul caloriilor arse - aceste date rămân private
+                            </div>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="mb-4">
+                            <label asp-for="PhoneNumber" class="form-label fw-semibold">
+                                <i class="bi bi-telephone text-success me-2"></i>Număr de Telefon
+                            </label>
+                            <input asp-for="PhoneNumber" type="tel" class="form-control form-control-lg" 
+                                   placeholder="Ex: +40712345678" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="bi bi-shield-check me-1"></i>
+                                Optional - pentru notificări și recuperare cont
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-5">
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-5">
+                                <i class="bi bi-x-circle me-2"></i>Anulează
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg px-5">
+                                <i class="bi bi-check-circle me-2"></i>Salvează Modificările
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="alert alert-info mt-4" role="alert">
+                <div class="d-flex">
+                    <div class="me-3">
+                        <i class="bi bi-info-circle-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="alert-heading mb-2">Confidențialitate și Securitate</h6>
+                        <p class="mb-0 small">
+                            Toate datele tale personale sunt securizate și criptate. Greutatea și alte informații sensibile 
+                            sunt folosite doar pentru calcularea statisticilor personale și nu sunt partajate cu terțe părți.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card border-success mt-4">
+                <div class="card-body">
+                    <h6 class="card-title text-success">
+                        <i class="bi bi-lightbulb-fill me-2"></i>Sfaturi pentru un profil complet
+                    </h6>
+                    <ul class="mb-0 small">
+                        <li>Adaugă orașul pentru a primi recomandări de rute locale</li>
+                        <li>Configurează greutatea pentru statistici precise de calorii</li>
+                        <li>Adaugă numărul de telefon pentru securitate suplimentară</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Add form validation feedback
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('form')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
+}
+
+<style>
+    .form-control:focus {
+        border-color: #198754;
+        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+    }
+    
+    .card {
+        border: none;
+    }
+    
+    input[readonly] {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+</style>

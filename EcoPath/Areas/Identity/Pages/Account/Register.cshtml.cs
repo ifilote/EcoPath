@@ -33,6 +33,12 @@ namespace EcoPath.Areas.Identity.Pages.Account
 
         public class InputModel
         {
+            [Required(ErrorMessage = "Numele de utilizator este obligatoriu")]
+            [StringLength(50, ErrorMessage = "Numele de utilizator trebuie să aibă între {2} și {1} caractere.", MinimumLength = 3)]
+            [RegularExpression(@"^[a-zA-Z0-9_.-]+$", ErrorMessage = "Numele de utilizator poate conține doar litere, cifre, punct, liniuță sau underscore")]
+            [Display(Name = "Nume utilizator")]
+            public string UserName { get; set; } = default!;
+
             [Required(ErrorMessage = "Email-ul este obligatoriu")]
             [EmailAddress(ErrorMessage = "Adresa de email nu este validă")]
             [Display(Name = "Email")]
@@ -76,7 +82,7 @@ namespace EcoPath.Areas.Identity.Pages.Account
             {
                 var user = new ApplicationUser
                 {
-                    UserName = Input.Email,
+                    UserName = Input.UserName,
                     Email = Input.Email,
                     Weight = Input.Weight,
                     City = Input.City,

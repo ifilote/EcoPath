@@ -19,10 +19,14 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
                     
                     <div class="form-floating mb-3">
-                        <input asp-for="Input.Email" class="form-control" autocomplete="username" 
-                               aria-required="true" placeholder="nume@exemplu.com" />
-                        <label asp-for="Input.Email">Email</label>
-                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        <input asp-for="Input.EmailOrUsername" class="form-control" autocomplete="username" 
+                               aria-required="true" placeholder="email sau username" />
+                        <label asp-for="Input.EmailOrUsername">Email sau Username</label>
+                        <span asp-validation-for="Input.EmailOrUsername" class="text-danger"></span>
+                        <div class="form-text text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Poți folosi email-ul sau numele de utilizator pentru autentificare
+                        </div>
                     </div>
                     
                     <div class="form-floating mb-3">
