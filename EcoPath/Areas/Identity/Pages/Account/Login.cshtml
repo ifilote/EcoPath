@@ -1,0 +1,63 @@
+@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Autentificare";
+}
+
+<div class="auth-container">
+    <div class="col-md-5 col-lg-4">
+        <div class="auth-card">
+            <!-- Header Verde cu Gradient -->
+            <div class="auth-header">
+                <h1>🔐 Bine ai revenit!</h1>
+                <p>Intră în contul tău EcoPath</p>
+            </div>
+
+            <div class="auth-body">
+                <form id="account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Email" class="form-control" autocomplete="username" 
+                               aria-required="true" placeholder="nume@exemplu.com" />
+                        <label asp-for="Input.Email">Email</label>
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Password" class="form-control" autocomplete="current-password" 
+                               aria-required="true" placeholder="Parola" />
+                        <label asp-for="Input.Password">Parolă</label>
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="checkbox mb-3">
+                        <label asp-for="Input.RememberMe" class="form-label">
+                            <input class="form-check-input" asp-for="Input.RememberMe" />
+                            @Html.DisplayNameFor(m => m.Input.RememberMe)
+                        </label>
+                    </div>
+                    
+                    <button id="login-submit" type="submit" class="w-100 btn btn-lg btn-primary mt-3">
+                        🔐 Autentifică-te
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <p>
+                <a id="forgot-password" asp-page="./ForgotPassword">Ai uitat parola?</a>
+            </p>
+            <p>
+                Nu ai cont? 
+                <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Înregistrează-te aici</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

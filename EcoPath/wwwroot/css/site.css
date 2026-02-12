@@ -1,5 +1,20 @@
+/* ==================== PALETA DE CULORI ECO + SPORT ==================== */
+:root {
+  --eco-green: #10B981;
+  --eco-green-dark: #059669;
+  --energy-orange: #F59E0B;
+  --sky-blue: #3B82F6;
+  --text-dark: #1F2937;
+  --bg-light: #F9FAFB;
+  --white: #FFFFFF;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== STILURI GENERALE ==================== */
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,19 +23,66 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
 body {
   margin-bottom: 60px;
+  background: linear-gradient(135deg, var(--bg-light) 0%, #E0F2F1 100%);
+  color: var(--text-dark);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* ==================== BUTOANE STILIZATE ==================== */
+.btn-success {
+  background: linear-gradient(135deg, var(--eco-green) 0%, var(--eco-green-dark) 100%);
+  border: none;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, var(--eco-green-dark) 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--sky-blue) 0%, #2563EB 100%);
+  border: none;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* ==================== FOCUS STATES ==================== */
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+  border-color: var(--eco-green);
+}
+
+.form-control:focus {
+  border-color: var(--eco-green);
+}
+
+/* ==================== CARDS ==================== */
+.card {
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px var(--shadow);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+/* ==================== FORM FLOATING ==================== */
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -28,4 +90,108 @@ body {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* ==================== PAGINI AUTENTIFICARE (Register/Login) ==================== */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.auth-header {
+  background: linear-gradient(135deg, var(--eco-green) 0%, var(--eco-green-dark) 100%);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+}
+
+.auth-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+.auth-body {
+  padding: 2rem;
+}
+
+.auth-section-title {
+  color: var(--eco-green-dark);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-control {
+  border-radius: 12px;
+  border: 2px solid #E5E7EB;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-control:hover {
+  border-color: var(--eco-green);
+}
+
+.form-floating > label {
+  padding: 1rem;
+  color: #6B7280;
+}
+
+.text-muted {
+  font-size: 0.875rem;
+  color: #6B7280 !important;
+}
+
+/* ==================== BADGE SPORT/ECO ==================== */
+.eco-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--eco-green) 0%, var(--eco-green-dark) 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.sport-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--energy-orange) 0%, #D97706 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* ==================== ALERTURI ==================== */
+.alert-danger {
+  background: #FEE2E2;
+  border: 2px solid #EF4444;
+  color: #991B1B;
+  border-radius: 12px;
+}
+
+.text-danger {
+  color: #DC2626 !important;
+  font-size: 0.875rem;
 }

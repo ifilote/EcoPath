@@ -1,0 +1,94 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Înregistrare";
+}
+
+<div class="auth-container">
+    <div class="col-md-6 col-lg-5">
+        <div class="auth-card">
+            <!-- Header Verde cu Gradient -->
+            <div class="auth-header">
+                <h1>🌱 EcoPath</h1>
+                <p>Creează-ți contul și începe călătoria eco-friendly!</p>
+            </div>
+
+            <div class="auth-body">
+                <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    <h5 class="auth-section-title">
+                        <span>📧</span> Informații de autentificare
+                    </h5>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <!-- Email -->
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Email" class="form-control" autocomplete="username" 
+                               aria-required="true" placeholder="nume@exemplu.com" />
+                        <label asp-for="Input.Email">Email</label>
+                        <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    </div>
+
+                    <!-- Parolă -->
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" 
+                               aria-required="true" placeholder="Parola" />
+                        <label asp-for="Input.Password">Parolă</label>
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+
+                    <!-- Confirmare parolă -->
+                    <div class="form-floating mb-4">
+                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" 
+                               aria-required="true" placeholder="Confirmă parola" />
+                        <label asp-for="Input.ConfirmPassword">Confirmă parola</label>
+                        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                    </div>
+
+                    <!-- ========== SECȚIUNEA CU CÂMPURILE PERSONALIZATE ========== -->
+                    <h5 class="auth-section-title mt-4">
+                        <span>🚴</span> Informații profil EcoPath
+                    </h5>
+
+                    <!-- Greutate -->
+                    <div class="form-floating mb-3">
+                        <input asp-for="Input.Weight" class="form-control" type="number" step="0.1" 
+                               aria-required="true" placeholder="Greutate (kg)" />
+                        <label asp-for="Input.Weight">Greutate (kg)</label>
+                        <span asp-validation-for="Input.Weight" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            Necesară pentru calculul caloriilor arse în timpul călătoriilor
+                        </small>
+                    </div>
+
+                    <!-- Oraș -->
+                    <div class="form-floating mb-4">
+                        <input asp-for="Input.City" class="form-control" aria-required="true" 
+                               placeholder="Orașul tău" />
+                        <label asp-for="Input.City">Oraș</label>
+                        <span asp-validation-for="Input.City" class="text-danger"></span>
+                        <small class="form-text text-muted">
+                            Pentru statistici locale și clasamente pe oraș
+                        </small>
+                    </div>
+
+                    <!-- Buton de înregistrare -->
+                    <button id="registerSubmit" type="submit" class="w-100 btn btn-lg btn-success mt-4">
+                        🌱 Creează cont
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Link către Login dacă are deja cont -->
+        <div class="text-center mt-4">
+            <p>
+                Ai deja cont? 
+                <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Autentifică-te aici</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
