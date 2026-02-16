@@ -1,0 +1,361 @@
+@model EcoPath.Models.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@* ═══════ CDN: Chart.js + cal-heatmap ═══════ *@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.css" />
+<link rel="stylesheet" href="~/css/dashboard.css" />
+
+<div class="dashboard-wrapper">
+
+    @* ═══════ HEADER ═══════ *@
+    <div class="dash-header">
+        <div class="dash-header-content">
+            <div>
+                <h1 class="dash-title">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </h1>
+                <p class="dash-subtitle">Bine ai revenit, <strong>@Model.UserName</strong>! Ești pe locul <span class="rank-badge">#@Model.UserRank</span> global.</p>
+            </div>
+            <div class="dash-header-actions">
+                <button class="btn-dash btn-dash-outline" data-bs-toggle="modal" data-bs-target="#goalsModal">
+                    <i class="bi bi-sliders"></i> Obiective
+                </button>
+                <a asp-action="ExportCsv" class="btn-dash btn-dash-primary">
+                    <i class="bi bi-download"></i> Export CSV
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════ OVERVIEW CARDS ═══════ *@
+    <section class="dash-section">
+        <div class="overview-grid">
+            <div class="overview-card card-co2">
+                <div class="overview-icon"><i class="bi bi-cloud-minus"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value" data-count="@Model.TotalCo2Saved">0</span>
+                    <span class="overview-unit">kg CO₂</span>
+                </div>
+                <p class="overview-label">CO₂ Salvat</p>
+                <div class="overview-sparkline"></div>
+            </div>
+            <div class="overview-card card-distance">
+                <div class="overview-icon"><i class="bi bi-signpost-split"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value" data-count="@Model.TotalDistance">0</span>
+                    <span class="overview-unit">km</span>
+                </div>
+                <p class="overview-label">Distanță Totală</p>
+                <div class="overview-sparkline"></div>
+            </div>
+            <div class="overview-card card-trips">
+                <div class="overview-icon"><i class="bi bi-bicycle"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value" data-count="@Model.TotalTrips">0</span>
+                    <span class="overview-unit">călătorii</span>
+                </div>
+                <p class="overview-label">Total Călătorii</p>
+                <div class="overview-sparkline"></div>
+            </div>
+            <div class="overview-card card-calories">
+                <div class="overview-icon"><i class="bi bi-fire"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value" data-count="@Model.TotalCaloriesBurned">0</span>
+                    <span class="overview-unit">kcal</span>
+                </div>
+                <p class="overview-label">Calorii Arse</p>
+                <div class="overview-sparkline"></div>
+            </div>
+        </div>
+    </section>
+
+    @* ═══════ PROGRESS BARS (Obiective Saptamanale) ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-trophy"></i> Obiective Săptămânale</h2>
+        <div class="goals-grid">
+            @{
+                var goals = new[] {
+                    new { Label = "Călătorii", Current = (double)Model.WeeklyTripsCurrent, Goal = (double)Model.WeeklyTripGoal, Icon = "bi-bicycle", Color = "#10B981", Unit = "" },
+                    new { Label = "CO₂ Salvat", Current = Model.WeeklyCo2Current, Goal = Model.WeeklyCo2Goal, Icon = "bi-cloud-minus", Color = "#3B82F6", Unit = "kg" },
+                    new { Label = "Distanță", Current = Model.WeeklyDistanceCurrent, Goal = Model.WeeklyDistanceGoal, Icon = "bi-signpost-split", Color = "#8B5CF6", Unit = "km" },
+                    new { Label = "Calorii", Current = Model.WeeklyCaloriesCurrent, Goal = Model.WeeklyCaloriesGoal, Icon = "bi-fire", Color = "#F59E0B", Unit = "kcal" }
+                };
+            }
+            @foreach (var g in goals)
+            {
+                var pct = g.Goal > 0 ? Math.Min(100, (g.Current / g.Goal) * 100) : 0;
+                <div class="goal-card">
+                    <div class="goal-header">
+                        <i class="bi @g.Icon" style="color: @g.Color"></i>
+                        <span class="goal-label">@g.Label</span>
+                        <span class="goal-fraction">@g.Current.ToString("F0")@g.Unit / @g.Goal.ToString("F0")@g.Unit</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: @pct.ToString("F0")%; background: @g.Color;" data-width="@pct.ToString("F0")"></div>
+                    </div>
+                    <span class="goal-pct" style="color: @g.Color">@pct.ToString("F0")%</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ═══════ CHARTS ROW ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-graph-up"></i> Analiză & Grafice</h2>
+        <div class="charts-grid">
+            @* Weekly Trips Bar Chart *@
+            <div class="chart-card">
+                <h3 class="chart-title"><i class="bi bi-bar-chart-line"></i> Călătorii pe Săptămână</h3>
+                <canvas id="weeklyTripsChart"></canvas>
+            </div>
+            @* Weekly CO2 Line Chart *@
+            <div class="chart-card">
+                <h3 class="chart-title"><i class="bi bi-graph-up-arrow"></i> CO₂ Salvat pe Săptămână</h3>
+                <canvas id="weeklyCo2Chart"></canvas>
+            </div>
+            @* Transport Types Doughnut *@
+            <div class="chart-card">
+                <h3 class="chart-title"><i class="bi bi-pie-chart"></i> Tipuri de Transport</h3>
+                <canvas id="transportChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    @* ═══════ HEATMAP CALENDAR ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-calendar-check"></i> Activitate Zilnică</h2>
+        <div class="heatmap-wrapper">
+            <div id="cal-heatmap"></div>
+        </div>
+    </section>
+
+    @* ═══════ ACHIEVEMENTS PROGRESS ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title">
+            <i class="bi bi-award"></i> Realizări
+            <span class="badge-count">@Model.AchievementCount / @Model.TotalPossibleAchievements</span>
+        </h2>
+        <div class="achievements-grid">
+            @foreach (var ach in Model.AchievementProgress)
+            {
+                <div class="achievement-card @(ach.IsUnlocked ? "unlocked" : "locked")">
+                    <div class="ach-icon-wrap @(ach.IsUnlocked ? "ach-glow" : "")">
+                        <i class="bi @ach.Icon"></i>
+                    </div>
+                    <div class="ach-info">
+                        <h4>@ach.Name</h4>
+                        <p>@ach.Description</p>
+                        @if (ach.IsUnlocked)
+                        {
+                            <span class="ach-unlocked-date"><i class="bi bi-check-circle-fill"></i> @ach.UnlockedAt?.ToString("dd MMM yyyy")</span>
+                        }
+                        else
+                        {
+                            <div class="ach-progress-track">
+                                <div class="ach-progress-fill" style="width: @ach.ProgressPercent.ToString("F0")%"></div>
+                            </div>
+                            <span class="ach-pct">@ach.CurrentValue.ToString("F0") / @ach.TargetValue.ToString("F0") (@ach.ProgressPercent.ToString("F0")%)</span>
+                        }
+                    </div>
+                </div>
+            }
+            @if (!Model.AchievementProgress.Any())
+            {
+                <div class="empty-state">
+                    <i class="bi bi-emoji-smile"></i>
+                    <p>Realizările vor apărea pe măsură ce călătorești eco!</p>
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ═══════ BOTTOM GRID: Leaderboard + City Comparison + Recent Activity ═══════ *@
+    <section class="dash-section">
+        <div class="bottom-grid">
+
+            @* LEADERBOARD *@
+            <div class="panel-card">
+                <h3 class="panel-title"><i class="bi bi-trophy-fill"></i> Top 5 Eco-Warriors</h3>
+                <div class="leaderboard-list">
+                    @{ int rank = 0; }
+                    @foreach (var u in Model.TopUsers)
+                    {
+                        rank++;
+                        var medalClass = rank switch { 1 => "medal-gold", 2 => "medal-silver", 3 => "medal-bronze", _ => "" };
+                        <div class="lb-row @(u.UserName == Model.UserName ? "lb-you" : "")">
+                            <span class="lb-rank @medalClass">
+                                @if (rank <= 3)
+                                {
+                                    <i class="bi bi-award-fill"></i>
+                                }
+                                #@rank
+                            </span>
+                            <div class="lb-info">
+                                <span class="lb-name">@u.UserName @(u.UserName == Model.UserName ? "(Tu)" : "")</span>
+                                <span class="lb-city">@u.City</span>
+                            </div>
+                            <div class="lb-stats">
+                                <span><i class="bi bi-cloud-minus"></i> @u.Co2Saved.ToString("F1") kg</span>
+                                <span><i class="bi bi-bicycle"></i> @u.TotalTrips</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* CITY COMPARISON *@
+            <div class="panel-card">
+                <h3 class="panel-title"><i class="bi bi-building"></i> Tu vs @(string.IsNullOrEmpty(Model.UserCity) ? "Oraș" : Model.UserCity)</h3>
+                <div class="comparison-grid">
+                    <div class="comp-item">
+                        <span class="comp-label">CO₂ Salvat</span>
+                        <div class="comp-bars">
+                            <div class="comp-bar-wrap">
+                                <span class="comp-tag">Tu</span>
+                                <div class="comp-bar comp-bar-you" style="width: @(Model.CityAverageCo2 > 0 ? Math.Min(100, (Model.UserCo2 / Math.Max(Model.UserCo2, Model.CityAverageCo2)) * 100) : 100)%">
+                                    @Model.UserCo2.ToString("F1") kg
+                                </div>
+                            </div>
+                            <div class="comp-bar-wrap">
+                                <span class="comp-tag">Media</span>
+                                <div class="comp-bar comp-bar-avg" style="width: @(Model.UserCo2 > 0 ? Math.Min(100, (Model.CityAverageCo2 / Math.Max(Model.UserCo2, Model.CityAverageCo2)) * 100) : 100)%">
+                                    @Model.CityAverageCo2.ToString("F1") kg
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comp-item">
+                        <span class="comp-label">Călătorii</span>
+                        <div class="comp-bars">
+                            <div class="comp-bar-wrap">
+                                <span class="comp-tag">Tu</span>
+                                <div class="comp-bar comp-bar-you" style="width: @(Model.CityAverageTrips > 0 ? Math.Min(100, ((double)Model.UserTripsCount / Math.Max(Model.UserTripsCount, Model.CityAverageTrips)) * 100) : 100)%">
+                                    @Model.UserTripsCount
+                                </div>
+                            </div>
+                            <div class="comp-bar-wrap">
+                                <span class="comp-tag">Media</span>
+                                <div class="comp-bar comp-bar-avg" style="width: @(Model.UserTripsCount > 0 ? Math.Min(100, (Model.CityAverageTrips / Math.Max(Model.UserTripsCount, Model.CityAverageTrips)) * 100) : 100)%">
+                                    @Model.CityAverageTrips.ToString("F0")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* RECENT ACTIVITY *@
+            <div class="panel-card">
+                <h3 class="panel-title"><i class="bi bi-clock-history"></i> Activitate Recentă</h3>
+                <div class="timeline">
+                    @foreach (var trip in Model.RecentTrips)
+                    {
+                        var transportIcon = trip.TransportType switch
+                        {
+                            TransportType.Walking => "bi-person-walking",
+                            TransportType.Biking => "bi-bicycle",
+                            TransportType.Bus => "bi-bus-front",
+                            TransportType.Tram => "bi-train-front",
+                            TransportType.Metro => "bi-train-lightrail-front",
+                            TransportType.Car => "bi-car-front",
+                            _ => "bi-geo-alt"
+                        };
+                        var transportColor = trip.TransportType switch
+                        {
+                            TransportType.Walking => "#10B981",
+                            TransportType.Biking => "#3B82F6",
+                            TransportType.Bus => "#8B5CF6",
+                            TransportType.Tram => "#F59E0B",
+                            TransportType.Metro => "#EC4899",
+                            TransportType.Car => "#EF4444",
+                            _ => "#6B7280"
+                        };
+                        <div class="timeline-item">
+                            <div class="timeline-dot" style="background: @transportColor">
+                                <i class="bi @transportIcon"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-route">
+                                    @trip.StartLocation <i class="bi bi-arrow-right"></i> @trip.EndLocation
+                                </div>
+                                <div class="timeline-meta">
+                                    <span><i class="bi bi-calendar3"></i> @trip.StartTime.ToString("dd MMM, HH:mm")</span>
+                                    <span><i class="bi bi-signpost-split"></i> @trip.Distance.ToString("F1") km</span>
+                                    <span><i class="bi bi-cloud-minus"></i> @trip.Co2Saved.ToString("F2") kg</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!Model.RecentTrips.Any())
+                    {
+                        <div class="empty-state">
+                            <i class="bi bi-compass"></i>
+                            <p>Nicio călătorie încă. Începe prima ta aventură eco!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+@* ═══════ MODAL: Edit Goals ═══════ *@
+<div class="modal fade" id="goalsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content goals-modal-content">
+            <div class="modal-header goals-modal-header">
+                <h5><i class="bi bi-sliders"></i> Configurează Obiectivele</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="goalsForm">
+                    @Html.AntiForgeryToken()
+                    <div class="goal-input-group">
+                        <label><i class="bi bi-bicycle"></i> Călătorii / Săptămână</label>
+                        <input type="number" id="goalTrips" value="@Model.WeeklyTripGoal" min="1" max="100" class="form-control" />
+                    </div>
+                    <div class="goal-input-group">
+                        <label><i class="bi bi-cloud-minus"></i> CO₂ Salvat (kg) / Săptămână</label>
+                        <input type="number" id="goalCo2" value="@Model.WeeklyCo2Goal" min="1" step="0.5" class="form-control" />
+                    </div>
+                    <div class="goal-input-group">
+                        <label><i class="bi bi-signpost-split"></i> Distanță (km) / Săptămână</label>
+                        <input type="number" id="goalDistance" value="@Model.WeeklyDistanceGoal" min="1" step="0.5" class="form-control" />
+                    </div>
+                    <div class="goal-input-group">
+                        <label><i class="bi bi-fire"></i> Calorii (kcal) / Săptămână</label>
+                        <input type="number" id="goalCalories" value="@Model.WeeklyCaloriesGoal" min="100" step="100" class="form-control" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-dash btn-dash-outline" data-bs-dismiss="modal">Anulează</button>
+                <button type="button" class="btn-dash btn-dash-primary" id="saveGoalsBtn">
+                    <i class="bi bi-check-lg"></i> Salvează
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/cal-heatmap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cal-heatmap@4.2.4/dist/plugins/Tooltip.min.js"></script>
+
+    @* Pasam datele din C# in JavaScript ca JSON *@
+    <script>
+        const CHART_DATA = {
+            weeklyTrips: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyTrips)),
+            weeklyCo2: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyCo2Saved)),
+            transport: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TransportBreakdown)),
+            dailyActivity: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DailyActivity))
+        };
+    </script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

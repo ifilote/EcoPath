@@ -15,5 +15,7 @@ namespace EcoPath.Data
         public DbSet<UserStats> UserStats { get; set; }
         public DbSet<Achievement> Achievements { get; set; }
         public DbSet<Models.Route> Routes { get; set; }
+        public DbSet<UserGoals> UserGoals { get; set; }
+        public DbSet<AchievementDefinition> AchievementDefinitions { get; set; }
     }
 }

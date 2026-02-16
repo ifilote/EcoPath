@@ -34,6 +34,9 @@ namespace EcoPath.Data
                 // ==================== SEED DEMO USERS ====================
                 await SeedDemoUsers(userManager, context, logger);
 
+                // ==================== SEED ACHIEVEMENT DEFINITIONS ====================
+                await SeedAchievementDefinitions(context, logger);
+
                 logger.LogInformation("Inițializarea bazei de date s-a finalizat cu succes!");
             }
             catch (Exception ex)
@@ -133,378 +136,228 @@ namespace EcoPath.Data
                 return;
             }
 
-            logger.LogInformation("Se creează utilizatori demo...");
+            logger.LogInformation("Se creează utilizatori demo cu date bogate...");
 
-            // ===== UTILIZATOR 1: Maria Ionescu - Utilizator activ =====
-            var maria = new ApplicationUser
+            var demoUsers = new[]
             {
-                UserName = "maria.ionescu",
-                Email = "maria.ionescu@ecopath.ro",
-                EmailConfirmed = true,
-                Weight = 65.0,
-                City = "București",
-                TotalPoints = 850,
-                Co2Saved = 45.8
+                new { UserName = "maria.ionescu", Email = "maria.ionescu@ecopath.ro", Weight = 65.0, City = "București", TripsCount = 35 },
+                new { UserName = "andrei.popescu", Email = "andrei.popescu@ecopath.ro", Weight = 80.0, City = "București", TripsCount = 42 },
+                new { UserName = "elena.vasilescu", Email = "elena.vasilescu@ecopath.ro", Weight = 58.0, City = "Cluj-Napoca", TripsCount = 28 },
+                new { UserName = "george.stan", Email = "george.stan@ecopath.ro", Weight = 75.0, City = "Timișoara", TripsCount = 38 },
+                new { UserName = "alexandra.marin", Email = "alexandra.marin@ecopath.ro", Weight = 62.0, City = "București", TripsCount = 45 },
+                new { UserName = "vlad.ionescu", Email = "vlad.ionescu@ecopath.ro", Weight = 85.0, City = "Cluj-Napoca", TripsCount = 31 },
+                new { UserName = "diana.popa", Email = "diana.popa@ecopath.ro", Weight = 60.0, City = "Iași", TripsCount = 22 },
+                new { UserName = "mihai.dumitrescu", Email = "mihai.dumitrescu@ecopath.ro", Weight = 78.0, City = "Brașov", TripsCount = 18 }
             };
-            await CreateUserWithData(userManager, context, maria, "Demo123!", logger);
 
-            // ===== UTILIZATOR 2: Andrei Popescu - Power User =====
-            var andrei = new ApplicationUser
+            foreach (var userData in demoUsers)
             {
-                UserName = "andrei.popescu",
-                Email = "andrei.popescu@ecopath.ro",
-                EmailConfirmed = true,
-                Weight = 80.0,
-                City = "Cluj-Napoca",
-                TotalPoints = 1520,
-                Co2Saved = 89.4
-            };
-            await CreateUserWithData(userManager, context, andrei, "Demo123!", logger);
+                var user = new ApplicationUser
+                {
+                    UserName = userData.UserName,
+                    Email = userData.Email,
+                    EmailConfirmed = true,
+                    Weight = userData.Weight,
+                    City = userData.City,
+                    TotalPoints = 0,
+                    Co2Saved = 0
+                };
 
-            // ===== UTILIZATOR 3: Elena Vasilescu - Utilizator nou =====
-            var elena = new ApplicationUser
-            {
-                UserName = "elena.vasilescu",
-                Email = "elena.vasilescu@ecopath.ro",
-                EmailConfirmed = true,
-                Weight = 58.0,
-                City = "Timișoara",
-                TotalPoints = 120,
-                Co2Saved = 8.5
-            };
-            await CreateUserWithData(userManager, context, elena, "Demo123!", logger);
+                var result = await userManager.CreateAsync(user, "Demo123!");
+                if (!result.Succeeded)
+                {
+                    logger.LogWarning($"Eroare la crearea utilizatorului {user.UserName}");
+                    continue;
+                }
 
-            await context.SaveChangesAsync();
-            logger.LogInformation("Utilizatori demo creați cu succes!");
+                await userManager.AddToRoleAsync(user, "User");
+
+                var createdUser = await userManager.FindByNameAsync(user.UserName!);
+                if (createdUser == null) continue;
+
+                // Stats
+                var stats = new UserStats
+                {
+                    UserId = createdUser.Id,
+                    TotalDistance = 0,
+                    TotalTrips = 0,
+                    TotalCo2Saved = 0,
+                    TotalCaloriesBurned = 0,
+                    LastUpdated = DateTime.Now
+                };
+                context.UserStats.Add(stats);
+
+                // UserGoals
+                var goals = new UserGoals
+                {
+                    UserId = createdUser.Id,
+                    WeeklyTripGoal = new Random().Next(5, 12),
+                    WeeklyCo2Goal = new Random().Next(30, 80),
+                    WeeklyDistanceGoal = new Random().Next(20, 60),
+                    WeeklyCaloriesGoal = new Random().Next(1500, 3000)
+                };
+                context.UserGoals.Add(goals);
+
+                await context.SaveChangesAsync();
+
+                // Generate trips
+                await GenerateTripsForUser(context, createdUser.Id, userData.City, userData.TripsCount, stats);
+
+                // Update user's Co2Saved
+                createdUser.Co2Saved = stats.TotalCo2Saved;
+                createdUser.TotalPoints = (int)(stats.TotalCo2Saved * 10 + stats.TotalDistance * 2);
+                await userManager.UpdateAsync(createdUser);
+
+                await context.SaveChangesAsync();
+                logger.LogInformation($"✓ {userData.UserName}: {userData.TripsCount} trips, {stats.TotalCo2Saved:F1} kg CO₂");
+            }
+
+            logger.LogInformation($"✓ {demoUsers.Length} utilizatori demo creați cu succes!");
         }
 
         /// <summary>
-        /// Creează un utilizator cu călătorii, stats și achievements
+        /// Generează trips realiste pentru un user pe ultimele 60 zile
         /// </summary>
-        private static async Task CreateUserWithData(UserManager<ApplicationUser> userManager, ApplicationDbContext context, ApplicationUser user, string password, ILogger logger)
+        private static async Task GenerateTripsForUser(ApplicationDbContext context, string userId, string city, int tripCount, UserStats stats)
         {
-            var result = await userManager.CreateAsync(user, password);
-            if (!result.Succeeded)
+            var rand = new Random(userId.GetHashCode()); // seed consistent per user
+            var trips = new List<Trip>();
+
+            // Locații per oraș
+            var locations = city switch
             {
-                logger.LogWarning($"Eroare la crearea utilizatorului {user.UserName}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                "București" => new[] { "Piața Unirii", "Piața Victoriei", "Universitate", "Obor", "Gara de Nord", "Politehnica", "Parcul Herăstrău", "Arcul de Triumf", "Berceni", "Titan" },
+                "Cluj-Napoca" => new[] { "Piața Unirii", "Iulius Mall", "UBB", "Parcul Central", "Piața Mărăști", "Baza Sportivă", "Gheorgheni", "Centru", "Zorilor", "Mănăștur" },
+                "Timișoara" => new[] { "Piața Victoriei", "Iulius Town", "Politehnica", "Parcul Rozelor", "Piața Operei", "Stadion", "Circumvalațiunii", "Sagului" },
+                "Iași" => new[] { "Piața Unirii", "Palas", "Universitate", "Copou", "Tătărași", "Gara", "Podu Roș", "Alexandru cel Bun" },
+                "Brașov" => new[] { "Piața Sfatului", "Coresi", "Tractorul", "Noua", "Astra", "Gării", "Rulmentul", "Bartolomeu" },
+                _ => new[] { "Centru", "Nord", "Sud", "Est", "Vest", "Gară", "Parc", "Mall" }
+            };
+
+            var transportTypes = Enum.GetValues<TransportType>();
+
+            for (int i = 0; i < tripCount; i++)
+            {
+                var daysAgo = rand.Next(0, 60);
+                var startLoc = locations[rand.Next(locations.Length)];
+                var endLoc = locations[rand.Next(locations.Length)];
+                while (endLoc == startLoc) endLoc = locations[rand.Next(locations.Length)];
+
+                var transportType = transportTypes[rand.Next(transportTypes.Length)];
+                var distance = transportType switch
+                {
+                    TransportType.Walking => Math.Round(rand.NextDouble() * 3 + 0.5, 1),  // 0.5-3.5 km
+                    TransportType.Biking => Math.Round(rand.NextDouble() * 10 + 2, 1),   // 2-12 km
+                    TransportType.Bus => Math.Round(rand.NextDouble() * 8 + 3, 1),        // 3-11 km
+                    TransportType.Tram => Math.Round(rand.NextDouble() * 9 + 3, 1),       // 3-12 km
+                    TransportType.Metro => Math.Round(rand.NextDouble() * 12 + 4, 1),     // 4-16 km
+                    TransportType.Car => Math.Round(rand.NextDouble() * 15 + 5, 1),       // 5-20 km
+                    _ => 5.0
+                };
+
+                var duration = transportType switch
+                {
+                    TransportType.Walking => (int)(distance * 12),    // ~12 min/km
+                    TransportType.Biking => (int)(distance * 4),      // ~4 min/km
+                    TransportType.Bus => (int)(distance * 3 + 5),
+                    TransportType.Tram => (int)(distance * 3.5 + 4),
+                    TransportType.Metro => (int)(distance * 2.5 + 3),
+                    TransportType.Car => (int)(distance * 2),
+                    _ => 20
+                };
+
+                var calories = transportType switch
+                {
+                    TransportType.Walking => distance * 50,           // ~50 kcal/km
+                    TransportType.Biking => distance * 40,            // ~40 kcal/km
+                    _ => 0
+                };
+
+                // CO2 saved vs mașină (mașina = ~0.225 kg CO2/km)
+                var co2 = transportType switch
+                {
+                    TransportType.Walking => distance * 0.225,
+                    TransportType.Biking => distance * 0.225,
+                    TransportType.Bus => distance * 0.15,       // 67% mai puțin decât mașina
+                    TransportType.Tram => distance * 0.17,
+                    TransportType.Metro => distance * 0.16,
+                    TransportType.Car => 0,
+                    _ => 0
+                };
+
+                var startTime = DateTime.Now.AddDays(-daysAgo).AddHours(rand.Next(7, 20)).AddMinutes(rand.Next(0, 60));
+
+                trips.Add(new Trip
+                {
+                    UserId = userId,
+                    StartLocation = startLoc,
+                    EndLocation = endLoc,
+                    Distance = distance,
+                    Duration = duration,
+                    TransportType = transportType,
+                    CaloriesBurned = Math.Round(calories, 0),
+                    Co2Saved = Math.Round(co2, 2),
+                    StartTime = startTime,
+                    EndTime = startTime.AddMinutes(duration),
+                    IsVerified = rand.Next(100) < 85  // 85% verified
+                });
+            }
+
+            // Sortează trips cronologic
+            trips = trips.OrderBy(t => t.StartTime).ToList();
+            context.Trips.AddRange(trips);
+
+            // Update stats
+            stats.TotalTrips = trips.Count;
+            stats.TotalDistance = Math.Round(trips.Sum(t => t.Distance), 1);
+            stats.TotalCo2Saved = Math.Round(trips.Sum(t => t.Co2Saved), 2);
+            stats.TotalCaloriesBurned = Math.Round(trips.Sum(t => t.CaloriesBurned), 0);
+            stats.LastUpdated = DateTime.Now;
+        }
+
+        /// <summary>
+        /// Populează catalogul de achievement-uri posibile.
+        /// Acestea sunt evaluate dinamic in DashboardController.
+        /// </summary>
+        private static async Task SeedAchievementDefinitions(ApplicationDbContext context, ILogger logger)
+        {
+            if (await context.AchievementDefinitions.AnyAsync())
+            {
+                logger.LogInformation("Achievement definitions există deja.");
                 return;
             }
 
-            await userManager.AddToRoleAsync(user, "User");
-
-            // Obținem user-ul creat pentru a avea ID-ul
-            var createdUser = await userManager.FindByNameAsync(user.UserName!);
-            if (createdUser == null) return;
-
-            // Cream stats pentru user
-            var stats = new UserStats
+            var definitions = new List<AchievementDefinition>
             {
-                UserId = createdUser.Id,
-                TotalDistance = 0,
-                TotalTrips = 0,
-                TotalCo2Saved = 0,
-                TotalCaloriesBurned = 0,
-                LastUpdated = DateTime.Now
+                // ── Trips ──
+                new() { Name = "Prima Călătorie",     Description = "Finalizează prima ta călătorie eco",    Icon = "bi-compass",        ConditionType = "trips",    ConditionValue = 1 },
+                new() { Name = "Explorator",          Description = "Completează 10 călătorii",               Icon = "bi-map",            ConditionType = "trips",    ConditionValue = 10 },
+                new() { Name = "Călător Dedicat",     Description = "Completează 50 călătorii",               Icon = "bi-signpost-2",     ConditionType = "trips",    ConditionValue = 50 },
+                new() { Name = "Maratonist Eco",      Description = "Completează 100 călătorii",              Icon = "bi-trophy",         ConditionType = "trips",    ConditionValue = 100 },
+                new() { Name = "Legendă Urbană",      Description = "Completează 500 călătorii",              Icon = "bi-stars",          ConditionType = "trips",    ConditionValue = 500 },
+
+                // ── Distance ──
+                new() { Name = "Primii 10 km",        Description = "Parcurge 10 km în total",                Icon = "bi-geo-alt",        ConditionType = "distance", ConditionValue = 10 },
+                new() { Name = "Biciclist Pro",       Description = "Parcurge 50 km în total",                Icon = "bi-bicycle",        ConditionType = "distance", ConditionValue = 50 },
+                new() { Name = "Centurion",           Description = "Parcurge 100 km în total",               Icon = "bi-speedometer2",   ConditionType = "distance", ConditionValue = 100 },
+                new() { Name = "Ultra Runner",        Description = "Parcurge 500 km în total",               Icon = "bi-lightning",      ConditionType = "distance", ConditionValue = 500 },
+                new() { Name = "Ocolul Pământului",   Description = "Parcurge 1000 km în total",              Icon = "bi-globe-americas", ConditionType = "distance", ConditionValue = 1000 },
+
+                // ── CO₂ ──
+                new() { Name = "Eco Starter",         Description = "Salvează 5 kg CO₂",                     Icon = "bi-cloud-minus",    ConditionType = "co2",      ConditionValue = 5 },
+                new() { Name = "Eco Champion",        Description = "Salvează 50 kg CO₂",                    Icon = "bi-trophy-fill",    ConditionType = "co2",      ConditionValue = 50 },
+                new() { Name = "Eco Hero",            Description = "Salvează 200 kg CO₂",                   Icon = "bi-shield-check",   ConditionType = "co2",      ConditionValue = 200 },
+                new() { Name = "Planet Saver",        Description = "Salvează 1000 kg CO₂",                  Icon = "bi-globe2",         ConditionType = "co2",      ConditionValue = 1000 },
+
+                // ── Calories ──
+                new() { Name = "Primele Calorii",     Description = "Arde 500 kcal prin transport eco",       Icon = "bi-fire",           ConditionType = "calories", ConditionValue = 500 },
+                new() { Name = "Fitness Warrior",     Description = "Arde 5000 kcal prin transport eco",      Icon = "bi-heart-pulse",    ConditionType = "calories", ConditionValue = 5000 },
+                new() { Name = "Iron Eco",            Description = "Arde 20000 kcal prin transport eco",     Icon = "bi-award-fill",     ConditionType = "calories", ConditionValue = 20000 }
             };
-            context.UserStats.Add(stats);
+
+            context.AchievementDefinitions.AddRange(definitions);
             await context.SaveChangesAsync();
-
-            // Adăugăm călătorii și achievements în funcție de utilizator
-            if (user.UserName == "maria.ionescu")
-            {
-                await CreateTripsForMaria(context, createdUser.Id, stats);
-                await CreateAchievementsForMaria(context, createdUser.Id);
-            }
-            else if (user.UserName == "andrei.popescu")
-            {
-                await CreateTripsForAndrei(context, createdUser.Id, stats);
-                await CreateAchievementsForAndrei(context, createdUser.Id);
-            }
-            else if (user.UserName == "elena.vasilescu")
-            {
-                await CreateTripsForElena(context, createdUser.Id, stats);
-            }
-
-            await context.SaveChangesAsync();
-            logger.LogInformation($"Date create pentru {user.UserName}");
-        }
-
-        private static async Task CreateTripsForMaria(ApplicationDbContext context, string userId, UserStats stats)
-        {
-            var trips = new List<Trip>
-            {
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Piața Unirii",
-                    EndLocation = "Piața Victoriei",
-                    Distance = 4.2,
-                    Duration = 25,
-                    TransportType = TransportType.Biking,
-                    CaloriesBurned = 120,
-                    Co2Saved = 0.95,
-                    StartTime = DateTime.Now.AddDays(-15),
-                    EndTime = DateTime.Now.AddDays(-15).AddMinutes(25),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Universitate",
-                    EndLocation = "Obor",
-                    Distance = 3.8,
-                    Duration = 20,
-                    TransportType = TransportType.Walking,
-                    CaloriesBurned = 180,
-                    Co2Saved = 0.86,
-                    StartTime = DateTime.Now.AddDays(-10),
-                    EndTime = DateTime.Now.AddDays(-10).AddMinutes(20),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Gara de Nord",
-                    EndLocation = "Politehnica",
-                    Distance = 6.5,
-                    Duration = 35,
-                    TransportType = TransportType.Bus,
-                    CaloriesBurned = 0,
-                    Co2Saved = 1.47,
-                    StartTime = DateTime.Now.AddDays(-5),
-                    EndTime = DateTime.Now.AddDays(-5).AddMinutes(35),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Parcul Herăstrău",
-                    EndLocation = "Arcul de Triumf",
-                    Distance = 2.1,
-                    Duration = 45,
-                    TransportType = TransportType.Walking,
-                    CaloriesBurned = 140,
-                    Co2Saved = 0.48,
-                    StartTime = DateTime.Now.AddDays(-2),
-                    EndTime = DateTime.Now.AddDays(-2).AddMinutes(45),
-                    IsVerified = true
-                }
-            };
-
-            context.Trips.AddRange(trips);
-            
-            // Actualizăm stats
-            stats.TotalTrips = trips.Count;
-            stats.TotalDistance = trips.Sum(t => t.Distance);
-            stats.TotalCo2Saved = trips.Sum(t => t.Co2Saved);
-            stats.TotalCaloriesBurned = trips.Sum(t => t.CaloriesBurned);
-            stats.LastUpdated = DateTime.Now;
-        }
-
-        private static async Task CreateTripsForAndrei(ApplicationDbContext context, string userId, UserStats stats)
-        {
-            var trips = new List<Trip>
-            {
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Piața Unirii Cluj",
-                    EndLocation = "Iulius Mall",
-                    Distance = 8.5,
-                    Duration = 40,
-                    TransportType = TransportType.Biking,
-                    CaloriesBurned = 280,
-                    Co2Saved = 1.92,
-                    StartTime = DateTime.Now.AddDays(-20),
-                    EndTime = DateTime.Now.AddDays(-20).AddMinutes(40),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Universitatea Babeș-Bolyai",
-                    EndLocation = "Parcul Central",
-                    Distance = 5.2,
-                    Duration = 35,
-                    TransportType = TransportType.Walking,
-                    CaloriesBurned = 320,
-                    Co2Saved = 1.18,
-                    StartTime = DateTime.Now.AddDays(-18),
-                    EndTime = DateTime.Now.AddDays(-18).AddMinutes(35),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Piața Mărăști",
-                    EndLocation = "Baza Sportivă",
-                    Distance = 12.3,
-                    Duration = 55,
-                    TransportType = TransportType.Biking,
-                    CaloriesBurned = 420,
-                    Co2Saved = 2.78,
-                    StartTime = DateTime.Now.AddDays(-12),
-                    EndTime = DateTime.Now.AddDays(-12).AddMinutes(55),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Gheorgheni",
-                    EndLocation = "Centru",
-                    Distance = 7.8,
-                    Duration = 45,
-                    TransportType = TransportType.Tram,
-                    CaloriesBurned = 0,
-                    Co2Saved = 1.76,
-                    StartTime = DateTime.Now.AddDays(-8),
-                    EndTime = DateTime.Now.AddDays(-8).AddMinutes(45),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Zorilor",
-                    EndLocation = "Mănăștur",
-                    Distance = 9.5,
-                    Duration = 50,
-                    TransportType = TransportType.Biking,
-                    CaloriesBurned = 380,
-                    Co2Saved = 2.15,
-                    StartTime = DateTime.Now.AddDays(-3),
-                    EndTime = DateTime.Now.AddDays(-3).AddMinutes(50),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "FSEGA",
-                    EndLocation = "Observator",
-                    Distance = 4.1,
-                    Duration = 25,
-                    TransportType = TransportType.Walking,
-                    CaloriesBurned = 210,
-                    Co2Saved = 0.93,
-                    StartTime = DateTime.Now.AddDays(-1),
-                    EndTime = DateTime.Now.AddDays(-1).AddMinutes(25),
-                    IsVerified = true
-                }
-            };
-
-            context.Trips.AddRange(trips);
-            
-            stats.TotalTrips = trips.Count;
-            stats.TotalDistance = trips.Sum(t => t.Distance);
-            stats.TotalCo2Saved = trips.Sum(t => t.Co2Saved);
-            stats.TotalCaloriesBurned = trips.Sum(t => t.CaloriesBurned);
-            stats.LastUpdated = DateTime.Now;
-        }
-
-        private static async Task CreateTripsForElena(ApplicationDbContext context, string userId, UserStats stats)
-        {
-            var trips = new List<Trip>
-            {
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Piața Victoriei Timișoara",
-                    EndLocation = "Iulius Town",
-                    Distance = 3.2,
-                    Duration = 20,
-                    TransportType = TransportType.Walking,
-                    CaloriesBurned = 160,
-                    Co2Saved = 0.72,
-                    StartTime = DateTime.Now.AddDays(-3),
-                    EndTime = DateTime.Now.AddDays(-3).AddMinutes(20),
-                    IsVerified = true
-                },
-                new Trip
-                {
-                    UserId = userId,
-                    StartLocation = "Universitatea Politehnica",
-                    EndLocation = "Parcul Rozelor",
-                    Distance = 2.5,
-                    Duration = 15,
-                    TransportType = TransportType.Biking,
-                    CaloriesBurned = 95,
-                    Co2Saved = 0.57,
-                    StartTime = DateTime.Now.AddDays(-1),
-                    EndTime = DateTime.Now.AddDays(-1).AddMinutes(15),
-                    IsVerified = false
-                }
-            };
-
-            context.Trips.AddRange(trips);
-            
-            stats.TotalTrips = trips.Count;
-            stats.TotalDistance = trips.Sum(t => t.Distance);
-            stats.TotalCo2Saved = trips.Sum(t => t.Co2Saved);
-            stats.TotalCaloriesBurned = trips.Sum(t => t.CaloriesBurned);
-            stats.LastUpdated = DateTime.Now;
-        }
-
-        private static async Task CreateAchievementsForMaria(ApplicationDbContext context, string userId)
-        {
-            var achievements = new List<Achievement>
-            {
-                new Achievement
-                {
-                    UserId = userId,
-                    Name = "Prima Călătorie",
-                    Description = "Ai completat prima ta călătorie eco-friendly!",
-                    Icon = "bi bi-star-fill",
-                    UnlockedAt = DateTime.Now.AddDays(-15)
-                },
-                new Achievement
-                {
-                    UserId = userId,
-                    Name = "Eco Warrior",
-                    Description = "Ai salvat 10 kg de CO₂",
-                    Icon = "bi bi-shield-fill-check",
-                    UnlockedAt = DateTime.Now.AddDays(-7)
-                }
-            };
-            context.Achievements.AddRange(achievements);
-        }
-
-        private static async Task CreateAchievementsForAndrei(ApplicationDbContext context, string userId)
-        {
-            var achievements = new List<Achievement>
-            {
-                new Achievement
-                {
-                    UserId = userId,
-                    Name = "Prima Călătorie",
-                    Description = "Ai completat prima ta călătorie eco-friendly!",
-                    Icon = "bi bi-star-fill",
-                    UnlockedAt = DateTime.Now.AddDays(-20)
-                },
-                new Achievement
-                {
-                    UserId = userId,
-                    Name = "Eco Warrior",
-                    Description = "Ai salvat 10 kg de CO₂",
-                    Icon = "bi bi-shield-fill-check",
-                    UnlockedAt = DateTime.Now.AddDays(-15)
-                },
-                new Achievement
-                {
-                    UserId = userId,
-                    Name = "Biciclist Pro",
-                    Description = "Ai parcurs 50 km cu bicicleta",
-                    Icon = "bi bi-bicycle",
-                    UnlockedAt = DateTime.Now.AddDays(-10)
-                },
-                new Achievement
-                {
-                    UserId = userId,
-                    Name = "Eco Champion",
-                    Description = "Ai salvat 50 kg de CO₂",
-                    Icon = "bi bi-trophy-fill",
-                    UnlockedAt = DateTime.Now.AddDays(-5)
-                }
-            };
-            context.Achievements.AddRange(achievements);
+            logger.LogInformation($"{definitions.Count} achievement definitions au fost create.");
         }
     }
 }

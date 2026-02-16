@@ -14,5 +14,6 @@ namespace EcoPath.Models
         public ICollection<Route> Routes { get; set; } = new List<Route>();
 
         public UserStats? Stats { get; set; }
+        public UserGoals? Goals { get; set; }
     }
 }
