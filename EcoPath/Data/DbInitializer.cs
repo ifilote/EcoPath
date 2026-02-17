@@ -218,7 +218,7 @@ namespace EcoPath.Data
         /// <summary>
         /// Generează trips realiste pentru un user pe ultimele 60 zile
         /// </summary>
-        private static async Task GenerateTripsForUser(ApplicationDbContext context, string userId, string city, int tripCount, UserStats stats)
+        private static Task GenerateTripsForUser(ApplicationDbContext context, string userId, string city, int tripCount, UserStats stats)
         {
             var rand = new Random(userId.GetHashCode()); // seed consistent per user
             var trips = new List<Trip>();
@@ -313,6 +313,8 @@ namespace EcoPath.Data
             stats.TotalCo2Saved = Math.Round(trips.Sum(t => t.Co2Saved), 2);
             stats.TotalCaloriesBurned = Math.Round(trips.Sum(t => t.CaloriesBurned), 0);
             stats.LastUpdated = DateTime.Now;
+            
+            return Task.CompletedTask;
         }
 
         /// <summary>
