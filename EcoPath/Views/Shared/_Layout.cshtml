@@ -53,40 +53,34 @@
     </svg>
 
     <header>
-        <nav class="eco-navbar navbar navbar-expand-sm navbar-toggleable-sm">
+        <nav class="eco-navbar navbar navbar-expand-lg navbar-toggleable-lg">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    <span class="brand-icon"><i class="bi bi-leaf"></i></span>
-                    EcoPath
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/EcoPathLogo.png" alt="EcoPath" class="navbar-logo" />
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 ms-lg-3">
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house-door me-1"></i>Acasă
+                                <i class="bi bi-house-door me-2"></i><span>Acasă</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Dashboard" asp-action="Index">
-                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                                <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Profile" asp-action="Index">
-                                <i class="bi bi-person-circle me-1"></i>Profil
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
-                                <i class="bi bi-shield-check me-1"></i>Confidențialitate
+                            <a class="nav-link" asp-area="" asp-controller="Trip" asp-action="History">
+                                <i class="bi bi-clock-history me-2"></i><span>Istoric</span>
                             </a>
                         </li>
                     </ul>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-3">
                         @* ── Dark Mode Toggle ── *@
                         <button class="eco-theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Comută tema">
                             <i class="bi bi-moon-stars" id="themeIcon"></i>

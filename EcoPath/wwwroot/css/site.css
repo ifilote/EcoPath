@@ -325,45 +325,55 @@ body {
   backdrop-filter: blur(var(--nav-blur));
   -webkit-backdrop-filter: blur(var(--nav-blur));
   border-bottom: 1px solid var(--nav-border);
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
   transition: all var(--duration-normal) var(--ease-default);
 }
 
+/* ── Logo & Brand ── */
 .eco-navbar .navbar-brand {
   font-family: var(--font-display);
   font-weight: var(--weight-extrabold);
   font-size: 1.35rem;
   letter-spacing: var(--tracking-tight);
-  background: var(--grad-eco-action);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   transition: opacity var(--duration-normal) var(--ease-default);
+  text-decoration: none;
 }
 
 .eco-navbar .navbar-brand:hover {
   opacity: 0.85;
 }
 
-/* Brand icon glow */
-.eco-navbar .brand-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: var(--grad-eco-action);
-  font-size: 1rem;
-  -webkit-text-fill-color: white;
+/* Logo image styling */
+.navbar-logo {
+  height: 100px;
+  width: auto;
+  object-fit: contain;
+  background: transparent;
+  mix-blend-mode: normal;
+  transition: transform var(--duration-normal) var(--ease-spring);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
 }
 
+.eco-navbar .navbar-brand:hover .navbar-logo {
+  transform: scale(1.08);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+[data-theme="dark"] .navbar-logo {
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.05));
+}
+
+[data-theme="dark"] .eco-navbar .navbar-brand:hover .navbar-logo {
+  filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.1));
+}
+
+/* ── Navigation Links ── */
 .eco-navbar .nav-link {
   font-family: var(--font-display);
   font-weight: var(--weight-medium);
@@ -375,12 +385,22 @@ body {
   transition: all var(--duration-normal) var(--ease-default);
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  position: relative;
+}
+
+.eco-navbar .nav-link i {
+  font-size: 1.1em;
+  transition: transform var(--duration-normal) var(--ease-spring);
 }
 
 .eco-navbar .nav-link:hover {
   color: var(--nav-text-hover) !important;
   background: var(--glass-green-5);
+}
+
+.eco-navbar .nav-link:hover i {
+  transform: translateY(-2px);
 }
 
 .eco-navbar .nav-link.active {
@@ -389,12 +409,23 @@ body {
   font-weight: var(--weight-semibold);
 }
 
+.eco-navbar .nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 2px;
+  background: var(--grad-eco-action);
+  border-radius: 2px;
+}
+
 [data-theme="dark"] .eco-navbar .nav-link.active {
   color: var(--eco-primary-300) !important;
   background: rgba(16, 185, 129, 0.1);
 }
 
-/* Theme toggle button in navbar */
+/* ── Theme Toggle ── */
 .eco-theme-toggle {
   width: 40px;
   height: 40px;
@@ -414,6 +445,24 @@ body {
   background: var(--glass-green-10);
   color: var(--eco-primary-500);
   transform: rotate(15deg);
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 991px) {
+  .navbar-logo {
+    height: 56px;
+  }
+  
+  .eco-navbar .nav-link {
+    padding: var(--space-3) var(--space-4) !important;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-logo {
+    height: 50px;
+  }
 }
 
 
