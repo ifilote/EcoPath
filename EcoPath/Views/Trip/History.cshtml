@@ -1,0 +1,211 @@
+@model IEnumerable<EcoPath.Models.Trip>
+
+@{
+    ViewData["Title"] = "Istoric Călătorii";
+}
+
+<link rel="stylesheet" href="~/css/dashboard.css" />
+
+<div class="dashboard-wrapper">
+    @* ═══════ HEADER ═══════ *@
+    <div class="dash-header">
+        <div class="dash-header-content">
+            <div>
+                <h1 class="dash-title">
+                    <i class="bi bi-clock-history"></i> Istoric Călătorii
+                </h1>
+                <p class="dash-subtitle">Toate călătoriile tale eco - <strong>@Model.Count()</strong> călătorii în total</p>
+            </div>
+            <div class="dash-header-actions">
+                <a asp-controller="Dashboard" asp-action="Index" class="btn-dash btn-dash-outline">
+                    <i class="bi bi-arrow-left"></i> Înapoi
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════ STATISTICS SUMMARY ═══════ *@
+    <section class="dash-section">
+        <div class="overview-grid">
+            <div class="overview-card card-trips">
+                <div class="overview-icon"><i class="bi bi-bicycle"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Count()</span>
+                    <span class="overview-unit">călătorii</span>
+                </div>
+                <p class="overview-label">Total Călătorii</p>
+            </div>
+            <div class="overview-card card-distance">
+                <div class="overview-icon"><i class="bi bi-signpost-split"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Sum(t => t.Distance).ToString("F1")</span>
+                    <span class="overview-unit">km</span>
+                </div>
+                <p class="overview-label">Distanță Totală</p>
+            </div>
+            <div class="overview-card card-co2">
+                <div class="overview-icon"><i class="bi bi-cloud-minus"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Sum(t => t.Co2Saved).ToString("F1")</span>
+                    <span class="overview-unit">kg CO₂</span>
+                </div>
+                <p class="overview-label">CO₂ Salvat</p>
+            </div>
+            <div class="overview-card card-calories">
+                <div class="overview-icon"><i class="bi bi-fire"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Sum(t => t.CaloriesBurned).ToString("F0")</span>
+                    <span class="overview-unit">kcal</span>
+                </div>
+                <p class="overview-label">Calorii Arse</p>
+            </div>
+        </div>
+    </section>
+
+    @* ═══════ TRIPS LIST ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title">
+            <i class="bi bi-list-ul"></i> Toate Călătoriile
+        </h2>
+        
+        @if (!Model.Any())
+        {
+            <div class="empty-state" style="padding: 60px 20px; text-align: center;">
+                <i class="bi bi-compass" style="font-size: 4rem; color: #94a3b8; margin-bottom: 20px;"></i>
+                <h3 style="color: #64748b; margin-bottom: 10px;">Nicio călătorie încă</h3>
+                <p style="color: #94a3b8;">Începe prima ta aventură eco!</p>
+            </div>
+        }
+        else
+        {
+            <div class="trips-timeline">
+                @foreach (var trip in Model)
+                {
+                    var transportIcon = trip.TransportType switch
+                    {
+                        TransportType.Walking => "bi-person-walking",
+                        TransportType.Biking => "bi-bicycle",
+                        TransportType.Bus => "bi-bus-front",
+                        TransportType.Tram => "bi-train-front",
+                        TransportType.Metro => "bi-train-lightrail-front",
+                        TransportType.Car => "bi-car-front",
+                        _ => "bi-geo-alt"
+                    };
+                    var transportColor = trip.TransportType switch
+                    {
+                        TransportType.Walking => "#10B981",
+                        TransportType.Biking => "#3B82F6",
+                        TransportType.Bus => "#8B5CF6",
+                        TransportType.Tram => "#F59E0B",
+                        TransportType.Metro => "#EC4899",
+                        TransportType.Car => "#EF4444",
+                        _ => "#6B7280"
+                    };
+                    var transportName = trip.TransportType switch
+                    {
+                        TransportType.Walking => "Mers pe jos",
+                        TransportType.Biking => "Bicicletă",
+                        TransportType.Bus => "Autobuz",
+                        TransportType.Tram => "Tramvai",
+                        TransportType.Metro => "Metro",
+                        TransportType.Car => "Mașină",
+                        _ => "Necunoscut"
+                    };
+
+                    <div class="trip-card" style="background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s ease; border-left: 4px solid @transportColor;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, @transportColor 0%, @transportColor@("CC") 100%); display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi @transportIcon" style="font-size: 28px; color: white;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 18px; font-weight: 600; color: #1e293b; margin: 0 0 4px 0;">@transportName</h4>
+                                    <p style="color: #64748b; margin: 0; font-size: 14px;">
+                                        <i class="bi bi-calendar3"></i> @trip.StartTime.ToString("dd MMMM yyyy, HH:mm")
+                                    </p>
+                                </div>
+                            </div>
+                            @if (trip.IsVerified)
+                            {
+                                <span style="background: #10B981; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;">
+                                    <i class="bi bi-check-circle-fill"></i> Verificat
+                                </span>
+                            }
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 16px;">
+                            <div style="flex: 1;">
+                                <div style="color: #64748b; font-size: 12px; margin-bottom: 4px;">De la</div>
+                                <div style="font-weight: 600; color: #1e293b;">@trip.StartLocation</div>
+                            </div>
+                            <i class="bi bi-arrow-right" style="color: @transportColor; font-size: 24px;"></i>
+                            <div style="flex: 1; text-align: right;">
+                                <div style="color: #64748b; font-size: 12px; margin-bottom: 4px;">Către</div>
+                                <div style="font-weight: 600; color: #1e293b;">@trip.EndLocation</div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                            <div class="trip-stat">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <i class="bi bi-signpost-split" style="color: @transportColor;"></i>
+                                    <span style="color: #64748b; font-size: 13px;">Distanță</span>
+                                </div>
+                                <div style="font-size: 20px; font-weight: 700; color: #1e293b;">@trip.Distance.ToString("F1") <span style="font-size: 14px; font-weight: 400; color: #64748b;">km</span></div>
+                            </div>
+                            <div class="trip-stat">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <i class="bi bi-clock" style="color: @transportColor;"></i>
+                                    <span style="color: #64748b; font-size: 13px;">Durată</span>
+                                </div>
+                                <div style="font-size: 20px; font-weight: 700; color: #1e293b;">@trip.Duration <span style="font-size: 14px; font-weight: 400; color: #64748b;">min</span></div>
+                            </div>
+                            <div class="trip-stat">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <i class="bi bi-cloud-minus" style="color: @transportColor;"></i>
+                                    <span style="color: #64748b; font-size: 13px;">CO₂ Salvat</span>
+                                </div>
+                                <div style="font-size: 20px; font-weight: 700; color: #1e293b;">@trip.Co2Saved.ToString("F2") <span style="font-size: 14px; font-weight: 400; color: #64748b;">kg</span></div>
+                            </div>
+                            <div class="trip-stat">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <i class="bi bi-fire" style="color: @transportColor;"></i>
+                                    <span style="color: #64748b; font-size: 13px;">Calorii</span>
+                                </div>
+                                <div style="font-size: 20px; font-weight: 700; color: #1e293b;">@trip.CaloriesBurned.ToString("F0") <span style="font-size: 14px; font-weight: 400; color: #64748b;">kcal</span></div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: right;">
+                            <a asp-action="Details" asp-route-id="@trip.Id" class="btn-dash" style="background: @transportColor; color: white; padding: 10px 20px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="bi bi-eye"></i> Vezi Detalii
+                            </a>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>
+
+<style>
+    .trip-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+    }
+
+    .trips-timeline {
+        animation: fadeIn 0.6s ease-in;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>

@@ -1,0 +1,271 @@
+@model EcoPath.Models.Trip
+
+@{
+    ViewData["Title"] = "Detalii Călătorie";
+    var transportIcon = Model.TransportType switch
+    {
+        TransportType.Walking => "bi-person-walking",
+        TransportType.Biking => "bi-bicycle",
+        TransportType.Bus => "bi-bus-front",
+        TransportType.Tram => "bi-train-front",
+        TransportType.Metro => "bi-train-lightrail-front",
+        TransportType.Car => "bi-car-front",
+        _ => "bi-geo-alt"
+    };
+    var transportColor = Model.TransportType switch
+    {
+        TransportType.Walking => "#10B981",
+        TransportType.Biking => "#3B82F6",
+        TransportType.Bus => "#8B5CF6",
+        TransportType.Tram => "#F59E0B",
+        TransportType.Metro => "#EC4899",
+        TransportType.Car => "#EF4444",
+        _ => "#6B7280"
+    };
+    var transportName = Model.TransportType switch
+    {
+        TransportType.Walking => "Mers pe jos",
+        TransportType.Biking => "Bicicletă",
+        TransportType.Bus => "Autobuz",
+        TransportType.Tram => "Tramvai",
+        TransportType.Metro => "Metro",
+        TransportType.Car => "Mașină",
+        _ => "Necunoscut"
+    };
+}
+
+<link rel="stylesheet" href="~/css/dashboard.css" />
+
+<div class="dashboard-wrapper">
+    @* ═══════ HEADER ═══════ *@
+    <div class="dash-header" style="background: linear-gradient(135deg, @transportColor 0%, @transportColor@("CC") 100%);">
+        <div class="dash-header-content">
+            <div>
+                <h1 class="dash-title">
+                    <i class="bi @transportIcon"></i> Detalii Călătorie
+                </h1>
+                <p class="dash-subtitle">@transportName • @Model.StartTime.ToString("dd MMMM yyyy, HH:mm")</p>
+            </div>
+            <div class="dash-header-actions">
+                <a asp-controller="Trip" asp-action="History" class="btn-dash btn-dash-outline">
+                    <i class="bi bi-arrow-left"></i> Înapoi la Istoric
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════ RUTA ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-geo-alt"></i> Ruta Călătoriei</h2>
+        <div class="route-card" style="background: white; border-radius: 20px; padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-left: 6px solid @transportColor;">
+            <div style="display: flex; align-items: center; gap: 24px;">
+                <div style="flex: 1;">
+                    <div style="margin-bottom: 24px;">
+                        <div style="display: inline-flex; align-items: center; gap: 12px; padding: 12px 20px; background: @transportColor@("15"); border-radius: 12px; margin-bottom: 12px;">
+                            <div style="width: 16px; height: 16px; background: @transportColor; border-radius: 50%; box-shadow: 0 0 0 4px @transportColor@("30");"></div>
+                            <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Punct de plecare</span>
+                        </div>
+                        <h3 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0;">@Model.StartLocation</h3>
+                        <p style="color: #64748b; margin: 4px 0 0 0;">@Model.StartTime.ToString("HH:mm")</p>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 16px; margin: 24px 0; padding-left: 20px;">
+                        <div style="width: 2px; height: 60px; background: linear-gradient(to bottom, @transportColor, @transportColor@("50")); position: relative;">
+                            <i class="bi @transportIcon" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 24px; color: @transportColor; background: white; padding: 8px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></i>
+                        </div>
+                        <div style="flex: 1; padding: 12px 20px; background: #f8fafc; border-radius: 12px;">
+                            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                                <div>
+                                    <i class="bi bi-signpost-split" style="color: @transportColor;"></i>
+                                    <strong>@Model.Distance.ToString("F2") km</strong>
+                                </div>
+                                <div>
+                                    <i class="bi bi-clock" style="color: @transportColor;"></i>
+                                    <strong>@Model.Duration min</strong>
+                                </div>
+                                <div>
+                                    <i class="bi bi-speedometer" style="color: @transportColor;"></i>
+                                    <strong>@((Model.Distance / Model.Duration * 60).ToString("F1")) km/h</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: inline-flex; align-items: center; gap: 12px; padding: 12px 20px; background: @transportColor@("15"); border-radius: 12px; margin-bottom: 12px;">
+                            <div style="width: 16px; height: 16px; background: @transportColor; border-radius: 4px; box-shadow: 0 0 0 4px @transportColor@("30");"></div>
+                            <span style="color: #64748b; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Destinație</span>
+                        </div>
+                        <h3 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0;">@Model.EndLocation</h3>
+                        <p style="color: #64748b; margin: 4px 0 0 0;">@Model.EndTime.ToString("HH:mm")</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @* ═══════ STATISTICI DETALIATE ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-graph-up"></i> Statistici Călătorie</h2>
+        <div class="overview-grid">
+            <div class="overview-card" style="border-top: 4px solid @transportColor;">
+                <div class="overview-icon" style="background: @transportColor@("15");"><i class="bi bi-signpost-split" style="color: @transportColor;"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Distance.ToString("F2")</span>
+                    <span class="overview-unit">km</span>
+                </div>
+                <p class="overview-label">Distanță Parcursă</p>
+            </div>
+            <div class="overview-card" style="border-top: 4px solid #10B981;">
+                <div class="overview-icon" style="background: #10B98115;"><i class="bi bi-cloud-minus" style="color: #10B981;"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Co2Saved.ToString("F2")</span>
+                    <span class="overview-unit">kg CO₂</span>
+                </div>
+                <p class="overview-label">CO₂ Salvat</p>
+                <small style="color: #10B981; font-weight: 600; display: block; margin-top: 8px;">
+                    <i class="bi bi-tree"></i> Echivalent cu ~@((Model.Co2Saved / 0.021).ToString("F0")) copaci
+                </small>
+            </div>
+            <div class="overview-card" style="border-top: 4px solid #F59E0B;">
+                <div class="overview-icon" style="background: #F59E0B15;"><i class="bi bi-fire" style="color: #F59E0B;"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.CaloriesBurned.ToString("F0")</span>
+                    <span class="overview-unit">kcal</span>
+                </div>
+                <p class="overview-label">Calorii Arse</p>
+            </div>
+            <div class="overview-card" style="border-top: 4px solid #8B5CF6;">
+                <div class="overview-icon" style="background: #8B5CF615;"><i class="bi bi-clock" style="color: #8B5CF6;"></i></div>
+                <div class="overview-data">
+                    <span class="overview-value">@Model.Duration</span>
+                    <span class="overview-unit">min</span>
+                </div>
+                <p class="overview-label">Durată</p>
+                <small style="color: #8B5CF6; font-weight: 600; display: block; margin-top: 8px;">
+                    @Model.StartTime.ToString("HH:mm") - @Model.EndTime.ToString("HH:mm")
+                </small>
+            </div>
+        </div>
+    </section>
+
+    @* ═══════ INFORMAȚII TRANSPORT ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-info-circle"></i> Informații Călătorie</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <div class="panel-card">
+                <h3 class="panel-title"><i class="bi @transportIcon"></i> Tip Transport</h3>
+                <div style="padding: 20px; text-align: center;">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 16px; border-radius: 50%; background: linear-gradient(135deg, @transportColor, @transportColor@("CC")); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px @transportColor@("40");">
+                        <i class="bi @transportIcon" style="font-size: 40px; color: white;"></i>
+                    </div>
+                    <h4 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0;">@transportName</h4>
+                    <p style="color: #64748b; margin-top: 8px;">Metodă de transport eco-friendly</p>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <h3 class="panel-title"><i class="bi bi-check-circle"></i> Status Călătorie</h3>
+                <div style="padding: 20px;">
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 16px; background: @(Model.IsVerified ? "#10B98115" : "#F59E0B15"); border-radius: 12px; margin-bottom: 12px;">
+                        <i class="bi @(Model.IsVerified ? "bi-check-circle-fill" : "bi-clock-fill")" style="font-size: 32px; color: @(Model.IsVerified ? "#10B981" : "#F59E0B");"></i>
+                        <div>
+                            <h4 style="margin: 0; color: #1e293b; font-weight: 600;">@(Model.IsVerified ? "Verificată" : "În așteptare")</h4>
+                            <p style="margin: 4px 0 0; color: #64748b; font-size: 14px;">@(Model.IsVerified ? "Călătoria a fost confirmată" : "Călătorie nevalidată")</p>
+                        </div>
+                    </div>
+                    <div style="color: #64748b; font-size: 14px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span><i class="bi bi-calendar-check"></i> Data</span>
+                            <strong style="color: #1e293b;">@Model.StartTime.ToString("dd MMMM yyyy")</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span><i class="bi bi-hash"></i> ID Călătorie</span>
+                            <strong style="color: #1e293b;">#@Model.Id</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <h3 class="panel-title"><i class="bi bi-calculator"></i> Calcule & Comparații</h3>
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="color: #64748b; font-size: 14px;">Viteză medie</span>
+                            <strong style="color: #1e293b; font-size: 18px;">@((Model.Distance / Model.Duration * 60).ToString("F1")) km/h</strong>
+                        </div>
+                        <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; background: @transportColor; width: @Math.Min(100, (Model.Distance / Model.Duration * 60) * 2)%;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="color: #64748b; font-size: 14px;">Eficiență CO₂</span>
+                            <strong style="color: #10B981; font-size: 18px;">@((Model.Co2Saved / Model.Distance).ToString("F3")) kg/km</strong>
+                        </div>
+                        <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; background: #10B981; width: @Math.Min(100, (Model.Co2Saved / Model.Distance) * 200)%;"></div>
+                        </div>
+                    </div>
+                    @if (Model.CaloriesBurned > 0)
+                    {
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="color: #64748b; font-size: 14px;">Calorii/km</span>
+                                <strong style="color: #F59E0B; font-size: 18px;">@((Model.CaloriesBurned / Model.Distance).ToString("F0")) kcal/km</strong>
+                            </div>
+                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; background: #F59E0B; width: @Math.Min(100, (Model.CaloriesBurned / Model.Distance) * 2)%;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @* ═══════ IMPACT ECOLOGIC ═══════ *@
+    <section class="dash-section">
+        <h2 class="section-title"><i class="bi bi-leaf"></i> Impact Ecologic</h2>
+        <div class="panel-card" style="background: linear-gradient(135deg, #10B98110 0%, #34D39910 100%); border: 2px solid #10B98130;">
+            <div style="padding: 32px;">
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <h3 style="font-size: 28px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">
+                        Contribuția Ta la Mediu
+                    </h3>
+                    <p style="color: #64748b; font-size: 16px;">Cu această călătorie ai contribuit la salvarea planetei!</p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+                    <div style="text-align: center; padding: 24px; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <i class="bi bi-tree" style="font-size: 48px; color: #10B981; margin-bottom: 12px;"></i>
+                        <h4 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0;">@((Model.Co2Saved / 0.021).ToString("F0"))</h4>
+                        <p style="color: #64748b; margin: 4px 0 0; font-size: 14px;">copaci echivalenți</p>
+                    </div>
+                    <div style="text-align: center; padding: 24px; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <i class="bi bi-droplet" style="font-size: 48px; color: #3B82F6; margin-bottom: 12px;"></i>
+                        <h4 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0;">@((Model.Co2Saved * 0.42).ToString("F1"))</h4>
+                        <p style="color: #64748b; margin: 4px 0 0; font-size: 14px;">litri de benzină economisiți</p>
+                    </div>
+                    <div style="text-align: center; padding: 24px; background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                        <i class="bi bi-lightning" style="font-size: 48px; color: #F59E0B; margin-bottom: 12px;"></i>
+                        <h4 style="font-size: 24px; font-weight: 700; color: #1e293b; margin: 0;">@((Model.Co2Saved * 2.5).ToString("F1"))</h4>
+                        <p style="color: #64748b; margin: 4px 0 0; font-size: 14px;">kWh energie salvată</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .route-card {
+        transition: all 0.3s ease;
+    }
+    
+    .route-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+    }
+</style>
