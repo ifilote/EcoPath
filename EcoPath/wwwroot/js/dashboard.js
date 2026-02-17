@@ -1,9 +1,21 @@
 /* ═══════════════════════════════════════════════
    ECOPATH DASHBOARD — JavaScript
    Chart.js charts, Cal-Heatmap, Animations, AJAX
+   Theme-aware — responds to dark/light mode
    ═══════════════════════════════════════════════ */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // ═══════ THEME UTILITIES ═══════
+    const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+
+    const getThemeColors = () => ({
+        gridColor: isDark() ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+        tickColor: isDark() ? '#94A3B8' : '#4B5563',
+        tooltipBg: isDark() ? '#1E293B' : '#1F2937',
+        borderWhite: isDark() ? '#1E293B' : '#ffffff',
+        legendColor: isDark() ? '#CBD5E1' : '#374151',
+    });
 
     // ═══════ 1. ANIMATED COUNTERS ═══════
     // Numerele din overview cards cresc animat de la 0 la valoarea reala
@@ -71,6 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
         gray: '#9CA3AF'
     };
 
+    // Global Chart.js defaults for design system fonts
+    Chart.defaults.font.family = "'Inter', 'Plus Jakarta Sans', system-ui, sans-serif";
+
+    // Store chart instances for theme updates
+    const chartInstances = {};
+
     // Ordinea zilelor saptamanii
     const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const dayLabels = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'];
@@ -87,7 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const weeklyTripsCtx = document.getElementById('weeklyTripsChart');
     if (weeklyTripsCtx) {
         const sorted = sortByDay(CHART_DATA.weeklyTrips);
-        new Chart(weeklyTripsCtx, {
+        const tc = getThemeColors();
+        chartInstances.weeklyTrips = new Chart(weeklyTripsCtx, {
             type: 'bar',
             data: {
                 labels: sorted.map(d => d.label),
@@ -109,8 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#1F2937',
-                        titleFont: { weight: '700' },
+                        backgroundColor: tc.tooltipBg,
+                        titleFont: { weight: '700', family: "'Plus Jakarta Sans', sans-serif" },
+                        bodyFont: { family: "'Inter', sans-serif" },
                         cornerRadius: 10,
                         padding: 12
                     }
@@ -118,11 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { stepSize: 1, font: { weight: '600' } },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
+                        ticks: { stepSize: 1, font: { weight: '600' }, color: tc.tickColor },
+                        grid: { color: tc.gridColor }
                     },
                     x: {
-                        ticks: { font: { weight: '600' } },
+                        ticks: { font: { weight: '600' }, color: tc.tickColor },
                         grid: { display: false }
                     }
                 },
@@ -135,7 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const weeklyCo2Ctx = document.getElementById('weeklyCo2Chart');
     if (weeklyCo2Ctx) {
         const sorted = sortByDay(CHART_DATA.weeklyCo2);
-        new Chart(weeklyCo2Ctx, {
+        const tc = getThemeColors();
+        chartInstances.weeklyCo2 = new Chart(weeklyCo2Ctx, {
             type: 'line',
             data: {
                 labels: sorted.map(d => d.label),
@@ -147,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fill: true,
                     tension: 0.4,
                     pointBackgroundColor: COLORS.green,
-                    pointBorderColor: '#fff',
+                    pointBorderColor: tc.borderWhite,
                     pointBorderWidth: 2,
                     pointRadius: 5,
                     pointHoverRadius: 8
@@ -159,9 +180,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#1F2937',
+                        backgroundColor: tc.tooltipBg,
                         cornerRadius: 10,
                         padding: 12,
+                        bodyFont: { family: "'Space Grotesk', sans-serif" },
                         callbacks: {
                             label: (ctx) => `${ctx.parsed.y.toFixed(2)} kg CO₂`
                         }
@@ -170,11 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: { font: { weight: '600' } },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
+                        ticks: { font: { weight: '600' }, color: tc.tickColor },
+                        grid: { color: tc.gridColor }
                     },
                     x: {
-                        ticks: { font: { weight: '600' } },
+                        ticks: { font: { weight: '600' }, color: tc.tickColor },
                         grid: { display: false }
                     }
                 },
@@ -188,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (transportCtx) {
         const transportLabels = Object.keys(CHART_DATA.transport);
         const transportValues = Object.values(CHART_DATA.transport);
+        const tc = getThemeColors();
 
         // Culori asociate tipurilor de transport
         const transportColorMap = {
@@ -208,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Car': 'Mașină'
         };
 
-        new Chart(transportCtx, {
+        chartInstances.transport = new Chart(transportCtx, {
             type: 'doughnut',
             data: {
                 labels: transportLabels.map(l => romanianLabels[l] || l),
@@ -216,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     data: transportValues,
                     backgroundColor: transportLabels.map(l => transportColorMap[l] || COLORS.gray),
                     borderWidth: 3,
-                    borderColor: '#fff',
+                    borderColor: tc.borderWhite,
                     hoverBorderWidth: 0
                 }]
             },
@@ -231,13 +254,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             padding: 15,
                             usePointStyle: true,
                             pointStyleWidth: 12,
-                            font: { weight: '600', size: 12 }
+                            font: { weight: '600', size: 12, family: "'Inter', sans-serif" },
+                            color: tc.legendColor
                         }
                     },
                     tooltip: {
-                        backgroundColor: '#1F2937',
+                        backgroundColor: tc.tooltipBg,
                         cornerRadius: 10,
                         padding: 12,
+                        bodyFont: { family: "'Space Grotesk', sans-serif" },
                         callbacks: {
                             label: (ctx) => {
                                 const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
@@ -340,7 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     saveBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Salvat!';
                     saveBtn.classList.add('btn-saved');
-                    setTimeout(() => location.reload(), 800);
+                    // Trigger confetti on successful save
+                    if (window.ecoConfetti) {
+                        const rect = saveBtn.getBoundingClientRect();
+                        window.ecoConfetti(rect.left + rect.width / 2, rect.top);
+                    }
+                    setTimeout(() => location.reload(), 1000);
                 } else {
                     throw new Error('Save failed');
                 }
@@ -353,5 +383,52 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ═══════ 6. THEME-AWARE CHART UPDATES ═══════
+    // When theme toggles, update chart grid/tick/border colors
+    const updateChartsForTheme = () => {
+        const tc = getThemeColors();
+
+        Object.values(chartInstances).forEach(chart => {
+            // Update tooltip background
+            if (chart.options.plugins?.tooltip) {
+                chart.options.plugins.tooltip.backgroundColor = tc.tooltipBg;
+            }
+
+            // Update scales (bar + line charts)
+            if (chart.options.scales?.y) {
+                chart.options.scales.y.grid.color = tc.gridColor;
+                chart.options.scales.y.ticks.color = tc.tickColor;
+            }
+            if (chart.options.scales?.x) {
+                chart.options.scales.x.ticks.color = tc.tickColor;
+            }
+
+            // Update doughnut border + legend
+            if (chart.config.type === 'doughnut') {
+                chart.data.datasets[0].borderColor = tc.borderWhite;
+                if (chart.options.plugins?.legend?.labels) {
+                    chart.options.plugins.legend.labels.color = tc.legendColor;
+                }
+            }
+
+            // Update line chart point borders
+            if (chart.config.type === 'line') {
+                chart.data.datasets[0].pointBorderColor = tc.borderWhite;
+            }
+
+            chart.update('none'); // 'none' = no animation on theme switch
+        });
+    };
+
+    // Listen for theme changes via MutationObserver on <html> data-theme
+    const themeObserver = new MutationObserver((mutations) => {
+        mutations.forEach(m => {
+            if (m.attributeName === 'data-theme') {
+                updateChartsForTheme();
+            }
+        });
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 });

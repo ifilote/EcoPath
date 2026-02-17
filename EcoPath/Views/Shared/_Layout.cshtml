@@ -1,20 +1,64 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0A0F1C" />
     <title>@ViewData["Title"] - EcoPath</title>
     <script type="importmap"></script>
+
+    @* ── Google Fonts: Plus Jakarta Sans + Inter + Space Grotesk + JetBrains Mono ── *@
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    @* ── Design System CSS Stack ── *@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/design-system.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/animations.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/EcoPath.styles.css" asp-append-version="true" />
+
+    @* ── Inline Critical: Theme Initialization (prevents flash) ── *@
+    <script>
+        (function() {
+            const saved = localStorage.getItem('ecopath-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = saved || (prefersDark ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 <body>
+    @* ── Leaf Particle Background (subtle floating leaves) ── *@
+    <div class="eco-leaf-particles" aria-hidden="true">
+        <div class="eco-leaf"></div>
+        <div class="eco-leaf"></div>
+        <div class="eco-leaf"></div>
+        <div class="eco-leaf"></div>
+        <div class="eco-leaf"></div>
+    </div>
+
+    @* ── SVG Gradient Definitions (used by eco score ring, etc.) ── *@
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="ecoScoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10B981" />
+                <stop offset="50%" stop-color="#0D9488" />
+                <stop offset="100%" stop-color="#06B6D4" />
+            </linearGradient>
+        </defs>
+    </svg>
+
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="eco-navbar navbar navbar-expand-sm navbar-toggleable-sm">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">EcoPath</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="brand-icon"><i class="bi bi-leaf"></i></span>
+                    EcoPath
+                </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -22,27 +66,33 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
                                 <i class="bi bi-house-door me-1"></i>Acasă
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Dashboard" asp-action="Index">
+                            <a class="nav-link" asp-area="" asp-controller="Dashboard" asp-action="Index">
                                 <i class="bi bi-speedometer2 me-1"></i>Dashboard
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Profile" asp-action="Index">
+                            <a class="nav-link" asp-area="" asp-controller="Profile" asp-action="Index">
                                 <i class="bi bi-person-circle me-1"></i>Profil
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Privacy">
                                 <i class="bi bi-shield-check me-1"></i>Confidențialitate
                             </a>
                         </li>
                     </ul>
-                    <partial name="_LoginPartial" />
+                    <div class="d-flex align-items-center gap-2">
+                        @* ── Dark Mode Toggle ── *@
+                        <button class="eco-theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Comută tema">
+                            <i class="bi bi-moon-stars" id="themeIcon"></i>
+                        </button>
+                        <partial name="_LoginPartial" />
+                    </div>
                 </div>
             </div>
         </nav>
@@ -53,11 +103,12 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - EcoPath - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="eco-footer">
+        <div class="container text-center">
+            &copy; 2026 - <strong>EcoPath</strong> — <a asp-area="" asp-controller="Home" asp-action="Privacy">Confidențialitate</a>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

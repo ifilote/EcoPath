@@ -3,23 +3,23 @@
     ViewData["Title"] = "Editează Profilul";
 }
 
+<link rel="stylesheet" href="~/css/profile.css" />
+
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <!-- Header -->
-            <div class="mb-4">
-                <h1 class="display-5 fw-bold mb-2">
-                    <i class="bi bi-pencil-square text-success me-2"></i>Editează Profilul
-                </h1>
-                <p class="text-muted">Actualizează informațiile tale personale</p>
+            <div class="profile-header" style="padding: var(--space-6) var(--space-7); margin-bottom: var(--space-5);">
+                <h1 style="font-size: var(--text-h2);"><i class="bi bi-pencil-square me-2"></i>Editează Profilul</h1>
+                <p>Actualizează informațiile tale personale</p>
             </div>
 
             <!-- Edit Form Card -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-person-gear me-2"></i>Informații Personale</h5>
+            <div class="profile-card">
+                <div class="profile-card-header header-eco">
+                    <i class="bi bi-person-gear"></i>Informații Personale
                 </div>
-                <div class="card-body p-4">
+                <div class="profile-card-body profile-form">
                     <form asp-action="Edit" method="post">
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
@@ -103,28 +103,30 @@
             </div>
 
             <!-- Info Box -->
-            <div class="alert alert-info mt-4" role="alert">
-                <div class="d-flex">
-                    <div class="me-3">
-                        <i class="bi bi-info-circle-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <h6 class="alert-heading mb-2">Confidențialitate și Securitate</h6>
-                        <p class="mb-0 small">
-                            Toate datele tale personale sunt securizate și criptate. Greutatea și alte informații sensibile 
-                            sunt folosite doar pentru calcularea statisticilor personale și nu sunt partajate cu terțe părți.
-                        </p>
+            <div class="profile-card mt-4" style="border-left: 4px solid var(--eco-secondary-500, #0EA5E9);">
+                <div class="profile-card-body">
+                    <div class="d-flex gap-3">
+                        <div>
+                            <i class="bi bi-info-circle-fill" style="font-size: 1.5rem; color: var(--eco-secondary-500, #0EA5E9);"></i>
+                        </div>
+                        <div>
+                            <h6 style="font-family: var(--font-display); font-weight: var(--weight-bold); margin-bottom: var(--space-2);">Confidențialitate și Securitate</h6>
+                            <p style="font-size: var(--text-body-sm); color: var(--color-text-muted); margin: 0; line-height: var(--leading-relaxed);">
+                                Toate datele tale personale sunt securizate și criptate. Greutatea și alte informații sensibile 
+                                sunt folosite doar pentru calcularea statisticilor personale și nu sunt partajate cu terțe părți.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Tips Card -->
-            <div class="card border-success mt-4">
-                <div class="card-body">
-                    <h6 class="card-title text-success">
+            <div class="profile-card mt-4" style="border-left: 4px solid var(--eco-primary-500);">
+                <div class="profile-card-body">
+                    <h6 style="font-family: var(--font-display); font-weight: var(--weight-bold); color: var(--eco-primary-600); margin-bottom: var(--space-2);">
                         <i class="bi bi-lightbulb-fill me-2"></i>Sfaturi pentru un profil complet
                     </h6>
-                    <ul class="mb-0 small">
+                    <ul style="margin: 0; font-size: var(--text-body-sm); color: var(--color-text-muted); padding-left: 1.25rem;">
                         <li>Adaugă orașul pentru a primi recomandări de rute locale</li>
                         <li>Configurează greutatea pentru statistici precise de calorii</li>
                         <li>Adaugă numărul de telefon pentru securitate suplimentară</li>
@@ -156,19 +158,3 @@
         })()
     </script>
 }
-
-<style>
-    .form-control:focus {
-        border-color: #198754;
-        box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
-    }
-    
-    .card {
-        border: none;
-    }
-    
-    input[readonly] {
-        background-color: #f8f9fa;
-        cursor: not-allowed;
-    }
-</style>

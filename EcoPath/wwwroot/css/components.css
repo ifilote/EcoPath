@@ -1,0 +1,1089 @@
+/* ╔══════════════════════════════════════════════════════════════════════════════╗
+   ║  ECOPATH — COMPONENT STYLING LIBRARY                                      ║
+   ║  Premium eco-design components · Nature × Technology                       ║
+   ╚══════════════════════════════════════════════════════════════════════════════╝ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §1  GLOBAL RESETS & BASE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--app-text);
+    background: var(--app-bg);
+    line-height: var(--leading-normal);
+    margin: 0;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    transition: background-color var(--duration-slow) var(--ease-default),
+                color var(--duration-slow) var(--ease-default);
+}
+
+/* ── Ambient Background Mesh ─────────────────────────────────────────── */
+/* Subtle gradient mesh that creates atmospheric depth behind all content */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: var(--grad-mesh-eco);
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.6;
+}
+
+/* Nature-inspired noise texture overlay */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+}
+
+/* Selection color */
+::selection {
+    background: var(--eco-primary-200);
+    color: var(--eco-primary-900);
+}
+
+[data-theme="dark"] ::selection {
+    background: var(--eco-primary-700);
+    color: var(--eco-primary-100);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §2  TYPOGRAPHY STYLES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+    color: var(--app-text);
+    margin: 0;
+}
+
+h1, .h1 {
+    font-size: var(--text-h1);
+    letter-spacing: var(--tracking-tighter);
+    font-weight: var(--weight-extrabold);
+}
+
+h2, .h2 {
+    font-size: var(--text-h2);
+    letter-spacing: var(--tracking-tight);
+    font-weight: var(--weight-bold);
+}
+
+h3, .h3 {
+    font-size: var(--text-h3);
+    letter-spacing: var(--tracking-tight);
+}
+
+h4, .h4 { font-size: var(--text-h4); }
+h5, .h5 { font-size: var(--text-h5); }
+h6, .h6 {
+    font-size: var(--text-h6);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    font-weight: var(--weight-semibold);
+    color: var(--app-text-secondary);
+}
+
+/* Data display numbers — for eco scores, big metrics */
+.text-display {
+    font-family: var(--font-data);
+    font-weight: var(--weight-extrabold);
+    letter-spacing: var(--tracking-tightest);
+    line-height: var(--leading-none);
+    font-variant-numeric: tabular-nums;
+}
+
+.text-display-xl { font-size: var(--text-display-xl); }
+.text-display-lg { font-size: var(--text-display-lg); }
+.text-display-md { font-size: var(--text-display-md); }
+
+/* Numeric data styling for dashboard values */
+.text-data {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-tightest);
+}
+
+/* Monospace for raw data */
+.text-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Overline label style */
+.text-overline {
+    font-size: var(--text-body-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--app-text-tertiary);
+}
+
+/* Body variants */
+.text-lg  { font-size: var(--text-body-lg); }
+.text-sm  { font-size: var(--text-body-sm); }
+.text-xs  { font-size: var(--text-body-xs); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §3  BUTTON SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════
+
+   BUTTON STYLING PHILOSOPHY
+   ─────────────────────────
+   Five tiers: Primary → Secondary → Eco → Subtle → Ghost
+   Each button has: idle, hover, active, focus, disabled states.
+   Buttons use inner shadow on active for press-depth illusion.
+
+   ICONOGRAPHY INSIDE BUTTONS
+   ──────────────────────────
+   • Icons: 2D, 1.5px stroke weight, rounded caps/joins
+   • Vertically centered with flex, 0.4rem gap to label.                     */
+
+.eco-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: var(--font-display);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-body-sm);
+    letter-spacing: var(--tracking-wide);
+    line-height: 1;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: all var(--duration-normal) var(--ease-default);
+    text-decoration: none;
+    -webkit-user-select: none;
+    user-select: none;
+    outline: none;
+}
+
+.eco-btn i {
+    font-size: 1.1em;
+    transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+/* ── Primary Button ───────────────────────────────────────────────────── */
+/* Full gradient fill, white text, eco glow on hover                       */
+.eco-btn-primary {
+    background: var(--grad-eco-action);
+    color: white;
+    box-shadow: var(--shadow-eco-sm);
+}
+
+.eco-btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-default);
+}
+
+.eco-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-eco-md);
+    color: white;
+}
+
+.eco-btn-primary:hover::before {
+    opacity: 1;
+}
+
+.eco-btn-primary:hover i {
+    transform: translateX(2px);
+}
+
+.eco-btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-eco-sm), inset 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.eco-btn-primary:focus-visible {
+    outline: 3px solid var(--eco-primary-300);
+    outline-offset: 2px;
+}
+
+/* ── Secondary Button ─────────────────────────────────────────────────── */
+/* Blue gradient, white text, data-blue glow                               */
+.eco-btn-secondary {
+    background: var(--grad-data-blue);
+    color: white;
+    box-shadow: var(--shadow-blue-sm);
+}
+
+.eco-btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-blue-md);
+    color: white;
+}
+
+.eco-btn-secondary:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.eco-btn-secondary:focus-visible {
+    outline: 3px solid var(--eco-blue-300);
+    outline-offset: 2px;
+}
+
+/* ── Eco Button ───────────────────────────────────────────────────────── */
+/* Frosted glass with green border + tint. Nature-meets-glass.             */
+.eco-btn-eco {
+    background: var(--glass-green-10);
+    color: var(--eco-primary-600);
+    border-color: var(--eco-primary-300);
+    backdrop-filter: blur(var(--blur-md));
+}
+
+[data-theme="dark"] .eco-btn-eco {
+    color: var(--eco-primary-300);
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.eco-btn-eco:hover {
+    background: var(--glass-green-15);
+    border-color: var(--eco-primary-400);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-eco-sm);
+    color: var(--eco-primary-700);
+}
+
+[data-theme="dark"] .eco-btn-eco:hover {
+    color: var(--eco-primary-200);
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.eco-btn-eco:active {
+    transform: translateY(0);
+    background: var(--eco-primary-100);
+}
+
+.eco-btn-eco:focus-visible {
+    outline: 3px solid var(--eco-primary-200);
+    outline-offset: 2px;
+}
+
+/* ── Subtle Button ────────────────────────────────────────────────────── */
+/* Barely visible background, strong hover state                           */
+.eco-btn-subtle {
+    background: var(--app-surface-tertiary);
+    color: var(--app-text-secondary);
+    border-color: transparent;
+}
+
+.eco-btn-subtle:hover {
+    background: var(--app-surface-secondary);
+    color: var(--app-text);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.eco-btn-subtle:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.eco-btn-subtle:focus-visible {
+    outline: 3px solid var(--eco-primary-300);
+    outline-offset: 2px;
+}
+
+/* ── Ghost Button ─────────────────────────────────────────────────────── */
+/* Transparent, border only on hover. Minimal presence.                    */
+.eco-btn-ghost {
+    background: transparent;
+    color: var(--app-text-secondary);
+    border-color: transparent;
+    padding: var(--space-2) var(--space-4);
+}
+
+.eco-btn-ghost:hover {
+    color: var(--eco-primary-600);
+    background: var(--glass-green-5);
+    border-color: var(--eco-primary-200);
+}
+
+[data-theme="dark"] .eco-btn-ghost:hover {
+    color: var(--eco-primary-300);
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.eco-btn-ghost:active {
+    background: var(--glass-green-10);
+}
+
+/* ── Button Sizes ─────────────────────────────────────────────────────── */
+.eco-btn-sm {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-body-xs);
+    border-radius: var(--radius-sm);
+}
+
+.eco-btn-lg {
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--text-body-md);
+    border-radius: var(--radius-lg);
+}
+
+.eco-btn-icon {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+}
+
+/* ── Button Disabled ──────────────────────────────────────────────────── */
+.eco-btn:disabled,
+.eco-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §4  CARD SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════
+
+   CARD STYLING PHILOSOPHY
+   ────────────────────────
+   Cards are frosted glass layers that float above the ambient background.
+   They use backdrop-filter for smooth transparency, subtle borders that 
+   catch light, and layered shadows for perceived depth. On hover, they 
+   lift slightly, shadow deepens, and border brightens — like a surface 
+   being illuminated from within.                                            */
+
+.eco-card {
+    background: var(--app-glass-card);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border: 1px solid var(--app-glass-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--duration-normal) var(--ease-default);
+}
+
+.eco-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.eco-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--eco-primary-200);
+}
+
+[data-theme="dark"] .eco-card:hover {
+    border-color: rgba(16, 185, 129, 0.15);
+}
+
+/* Card variant: elevated (higher glass, stronger blur) */
+.eco-card-elevated {
+    background: var(--app-glass-surface);
+    backdrop-filter: blur(var(--blur-lg));
+    box-shadow: var(--shadow-xl);
+}
+
+/* Card variant: flush (no hover lift, embedded feel) */
+.eco-card-flush {
+    box-shadow: var(--shadow-sm);
+}
+
+.eco-card-flush:hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §5  METRIC WIDGET
+   ═══════════════════════════════════════════════════════════════════════════
+
+   The metric widget is the core data atom — a small card showing a single
+   key metric (CO2 saved, distance, trips, calories). It features:
+   • Colored icon badge (top-left)
+   • Large tabular number (center)
+   • Unit label (after number)
+   • Subtle label below
+   • Decorative radial gradient in corner (color-coded)                      */
+
+.eco-metric {
+    background: var(--app-glass-card);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border: 1px solid var(--app-glass-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    position: relative;
+    overflow: hidden;
+    transition: all var(--duration-normal) var(--ease-default);
+    box-shadow: var(--shadow-md);
+}
+
+/* Corner glow decoration */
+.eco-metric::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -20%;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.6;
+    transition: opacity var(--duration-slow) var(--ease-default);
+}
+
+.eco-metric:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+}
+
+.eco-metric:hover::after {
+    opacity: 1;
+}
+
+/* Metric icon badge */
+.eco-metric-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: var(--space-4);
+    transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.eco-metric:hover .eco-metric-icon {
+    transform: scale(1.1) rotate(-3deg);
+}
+
+/* Metric value */
+.eco-metric-value {
+    font-family: var(--font-data);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: var(--weight-extrabold);
+    letter-spacing: var(--tracking-tightest);
+    line-height: var(--leading-none);
+    color: var(--app-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.eco-metric-unit {
+    font-family: var(--font-body);
+    font-size: var(--text-body-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--app-text-secondary);
+    margin-left: var(--space-1);
+}
+
+.eco-metric-label {
+    font-size: var(--text-body-sm);
+    color: var(--app-text-secondary);
+    margin-top: var(--space-1);
+    font-weight: var(--weight-medium);
+}
+
+/* ── Metric Color Variants ────────────────────────────────────────────── */
+.eco-metric--co2 .eco-metric-icon       { background: var(--semantic-co2-soft); color: var(--semantic-co2); }
+.eco-metric--co2::after                  { background: radial-gradient(circle, var(--semantic-co2-soft), transparent 70%); }
+.eco-metric--co2:hover                   { box-shadow: var(--shadow-xl), var(--semantic-co2-glow); }
+
+.eco-metric--distance .eco-metric-icon   { background: var(--glass-blue-8); color: var(--eco-blue-500); }
+.eco-metric--distance::after             { background: radial-gradient(circle, rgba(59,130,246,0.12), transparent 70%); }
+.eco-metric--distance:hover              { box-shadow: var(--shadow-xl), var(--shadow-blue-sm); }
+
+.eco-metric--trips .eco-metric-icon      { background: rgba(99,102,241,0.12); color: var(--eco-indigo-500); }
+.eco-metric--trips::after                { background: radial-gradient(circle, rgba(99,102,241,0.1), transparent 70%); }
+
+.eco-metric--calories .eco-metric-icon   { background: var(--semantic-calorie-soft); color: var(--semantic-calorie); }
+.eco-metric--calories::after             { background: radial-gradient(circle, var(--semantic-calorie-soft), transparent 70%); }
+.eco-metric--calories:hover              { box-shadow: var(--shadow-xl), var(--semantic-calorie-glow); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §6  PROGRESS BARS
+   ═══════════════════════════════════════════════════════════════════════════
+
+   PROGRESS BAR STYLING
+   ────────────────────
+   Track: Soft, rounded, semi-transparent background with subtle inner shadow.
+   Fill: Gradient with animated shimmer overlay for "alive" feeling.
+   The fill grows with a spring-like cubic-bezier for organic motion.         */
+
+.eco-progress-track {
+    height: 10px;
+    background: var(--app-surface-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .eco-progress-track {
+    background: var(--dark-bg-tertiary);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.eco-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    position: relative;
+    transition: width 1.5s var(--ease-spring);
+    overflow: hidden;
+}
+
+/* Animated shimmer on progress fill */
+.eco-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        110deg,
+        transparent 25%,
+        rgba(255, 255, 255, 0.25) 37%,
+        transparent 63%
+    );
+    animation: progressShimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+}
+
+/* Progress fill color variants */
+.eco-progress--green   .eco-progress-fill { background: var(--grad-eco-action); }
+.eco-progress--blue    .eco-progress-fill { background: var(--grad-data-blue); }
+.eco-progress--amber   .eco-progress-fill { background: linear-gradient(90deg, var(--eco-amber-500), var(--eco-amber-400)); }
+.eco-progress--coral   .eco-progress-fill { background: var(--grad-coral-burn); }
+.eco-progress--indigo  .eco-progress-fill { background: linear-gradient(90deg, var(--eco-indigo-500), var(--eco-indigo-400)); }
+
+/* Large progress bar variant */
+.eco-progress-track-lg {
+    height: 14px;
+}
+
+/* Thin progress bar variant */
+.eco-progress-track-sm {
+    height: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §7  CIRCULAR ECO SCORE INDICATOR
+   ═══════════════════════════════════════════════════════════════════════════
+
+   A centered circular gauge that displays the overall eco score.
+   Uses SVG-driven ring with a conic gradient feel achieved via 
+   stroke-dasharray animation. The center number uses display font.
+   Surrounded by a subtle pulsing glow.                                      */
+
+.eco-score-ring {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eco-score-ring svg {
+    transform: rotate(-90deg);
+}
+
+.eco-score-ring .ring-track {
+    fill: none;
+    stroke: var(--app-surface-tertiary);
+    stroke-width: 8;
+}
+
+[data-theme="dark"] .eco-score-ring .ring-track {
+    stroke: var(--dark-bg-tertiary);
+}
+
+.eco-score-ring .ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke: url(#ecoScoreGradient);
+    transition: stroke-dasharray 2s var(--ease-spring);
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
+}
+
+.eco-score-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.eco-score-number {
+    font-family: var(--font-data);
+    font-size: var(--text-display-lg);
+    font-weight: var(--weight-extrabold);
+    letter-spacing: var(--tracking-tightest);
+    line-height: var(--leading-none);
+    background: var(--grad-eco-action);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.eco-score-label {
+    font-size: var(--text-body-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wider);
+    text-transform: uppercase;
+    color: var(--app-text-tertiary);
+    margin-top: var(--space-1);
+}
+
+/* Pulsing glow behind the ring */
+.eco-score-glow {
+    position: absolute;
+    inset: -15%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+    animation: ecoScorePulse 3s ease-in-out infinite;
+}
+
+@keyframes ecoScorePulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%      { transform: scale(1.08); opacity: 0.8; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §8  CHART STYLING
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Chart containers use glass card styling. Chart.js is styled via JS config
+   but the container provides the premium frame:
+   • Frosted glass background
+   • Subtle inner title with icon
+   • Hover state brightens the container                                     */
+
+.eco-chart-container {
+    background: var(--app-glass-card);
+    backdrop-filter: blur(var(--blur-md));
+    -webkit-backdrop-filter: blur(var(--blur-md));
+    border: 1px solid var(--app-glass-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-md);
+    transition: all var(--duration-normal) var(--ease-default);
+    position: relative;
+    overflow: hidden;
+}
+
+.eco-chart-container:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--eco-primary-200);
+}
+
+[data-theme="dark"] .eco-chart-container:hover {
+    border-color: rgba(16, 185, 129, 0.12);
+}
+
+.eco-chart-title {
+    font-family: var(--font-display);
+    font-size: var(--text-body-md);
+    font-weight: var(--weight-bold);
+    color: var(--app-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+}
+
+.eco-chart-title i {
+    color: var(--eco-primary-500);
+    font-size: 1.1rem;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §9  TOGGLE SWITCH
+   ═══════════════════════════════════════════════════════════════════════════
+
+   A premium toggle with a smooth sliding knob, color transition from 
+   neutral gray to eco green, and a subtle glow on active state.             */
+
+.eco-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.eco-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.eco-toggle-track {
+    width: 48px;
+    height: 26px;
+    border-radius: var(--radius-full);
+    background: var(--app-surface-tertiary);
+    border: 2px solid var(--app-border);
+    position: relative;
+    transition: all var(--duration-normal) var(--ease-default);
+}
+
+.eco-toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--duration-normal) var(--ease-spring);
+}
+
+.eco-toggle input:checked + .eco-toggle-track {
+    background: var(--eco-primary-500);
+    border-color: var(--eco-primary-500);
+    box-shadow: var(--shadow-eco-sm);
+}
+
+.eco-toggle input:checked + .eco-toggle-track .eco-toggle-knob {
+    transform: translateX(22px);
+}
+
+.eco-toggle input:focus-visible + .eco-toggle-track {
+    outline: 3px solid var(--eco-primary-300);
+    outline-offset: 2px;
+}
+
+.eco-toggle-label {
+    margin-left: var(--space-3);
+    font-size: var(--text-body-sm);
+    font-weight: var(--weight-medium);
+    color: var(--app-text-secondary);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §10  TABS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.eco-tabs {
+    display: flex;
+    gap: var(--space-1);
+    background: var(--app-surface-tertiary);
+    padding: var(--space-1);
+    border-radius: var(--radius-lg);
+}
+
+.eco-tab {
+    flex: 1;
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: var(--text-body-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--app-text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--ease-default);
+    text-align: center;
+}
+
+.eco-tab:hover {
+    color: var(--app-text);
+    background: var(--glass-white-40);
+}
+
+[data-theme="dark"] .eco-tab:hover {
+    background: var(--glass-white-5);
+}
+
+.eco-tab.active,
+.eco-tab[aria-selected="true"] {
+    color: var(--eco-primary-700);
+    background: var(--app-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .eco-tab.active {
+    color: var(--eco-primary-300);
+    background: var(--dark-bg-tertiary);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §11  INPUT FIELDS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.eco-input {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: var(--text-body-md);
+    color: var(--app-text);
+    background: var(--app-surface);
+    border: 2px solid var(--app-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    transition: all var(--duration-normal) var(--ease-default);
+    outline: none;
+}
+
+.eco-input::placeholder {
+    color: var(--app-text-tertiary);
+}
+
+.eco-input:hover {
+    border-color: var(--eco-primary-300);
+}
+
+.eco-input:focus {
+    border-color: var(--eco-primary-500);
+    box-shadow: 0 0 0 4px var(--glass-green-10);
+}
+
+[data-theme="dark"] .eco-input {
+    background: var(--dark-bg-secondary);
+}
+
+[data-theme="dark"] .eco-input:focus {
+    border-color: var(--eco-primary-400);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+/* Input with icon */
+.eco-input-group {
+    position: relative;
+}
+
+.eco-input-group .eco-input {
+    padding-left: var(--space-10);
+}
+
+.eco-input-group-icon {
+    position: absolute;
+    left: var(--space-4);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--app-text-tertiary);
+    transition: color var(--duration-normal) var(--ease-default);
+}
+
+.eco-input-group:focus-within .eco-input-group-icon {
+    color: var(--eco-primary-500);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §12  BADGES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.eco-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-display);
+    font-size: var(--text-body-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-wide);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    line-height: 1.4;
+}
+
+.eco-badge-eco {
+    background: var(--eco-primary-100);
+    color: var(--eco-primary-700);
+}
+
+[data-theme="dark"] .eco-badge-eco {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--eco-primary-300);
+}
+
+.eco-badge-info {
+    background: var(--eco-blue-100);
+    color: var(--eco-blue-700);
+}
+
+.eco-badge-warning {
+    background: var(--semantic-warning-soft);
+    color: var(--eco-amber-600);
+}
+
+.eco-badge-achievement {
+    background: var(--semantic-achievement-soft);
+    color: #B8860B;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+[data-theme="dark"] .eco-badge-achievement {
+    color: var(--semantic-achievement);
+}
+
+.eco-badge-calorie {
+    background: var(--semantic-calorie-soft);
+    color: #CC3333;
+}
+
+/* Gamification badge — larger, more decorative */
+.eco-badge-game {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-body-sm);
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.eco-badge-game::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+}
+
+.eco-badge-gold {
+    background: var(--grad-achievement-gold);
+    color: #78350F;
+    box-shadow: var(--shadow-gold-md);
+}
+
+.eco-badge-silver {
+    background: linear-gradient(135deg, #D1D5DB 0%, #F3F4F6 50%, #9CA3AF 100%);
+    color: #374151;
+}
+
+.eco-badge-bronze {
+    background: linear-gradient(135deg, #D97706 0%, #FBBF24 50%, #D97706 100%);
+    color: #78350F;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §13  NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.eco-notification {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid;
+    backdrop-filter: blur(var(--blur-md));
+    animation: notificationSlideIn 0.4s var(--ease-spring);
+}
+
+.eco-notification-success {
+    background: var(--semantic-success-soft);
+    border-color: var(--semantic-success);
+    color: var(--eco-primary-800);
+}
+
+.eco-notification-warning {
+    background: var(--semantic-warning-soft);
+    border-color: var(--semantic-warning);
+    color: #92400E;
+}
+
+.eco-notification-error {
+    background: var(--semantic-error-soft);
+    border-color: var(--semantic-error);
+    color: #991B1B;
+}
+
+.eco-notification-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--eco-blue-500);
+    color: var(--eco-blue-700);
+}
+
+[data-theme="dark"] .eco-notification-success { color: var(--eco-primary-200); }
+[data-theme="dark"] .eco-notification-warning { color: var(--eco-amber-300); }
+[data-theme="dark"] .eco-notification-error   { color: #FCA5A5; }
+[data-theme="dark"] .eco-notification-info    { color: var(--eco-blue-200); }
+
+.eco-notification-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.eco-notification-content {
+    flex: 1;
+}
+
+.eco-notification-title {
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-body-sm);
+    margin-bottom: var(--space-1);
+}
+
+.eco-notification-message {
+    font-size: var(--text-body-sm);
+    opacity: 0.85;
+}
+
+@keyframes notificationSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}

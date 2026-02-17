@@ -1,0 +1,519 @@
+/* ╔══════════════════════════════════════════════════════════════════════════════╗
+   ║  ECOPATH — ANIMATIONS & MICRO-INTERACTIONS                                ║
+   ║  Kinetic design language · Organic motion · Living interfaces              ║
+   ╚══════════════════════════════════════════════════════════════════════════════╝
+
+   ANIMATION PHILOSOPHY
+   ────────────────────
+   Every animation in EcoPath serves a purpose: to make data feel alive,
+   to reward sustainable action, and to create the feeling that the 
+   interface is a living ecosystem responding to the user.
+
+   Motion follows nature: ease-out for arrivals (like a leaf settling),
+   ease-in for departures, spring curves for playful interactions.
+
+   MICRO AESTHETICS
+   ─────────────────
+   • Hover: Elements lift toward light — translateY(-4px) + shadow deepen
+   • Active: Press into surface — translateY(0) + inner shadow
+   • Focus: Eco-green ring with 4px offset — clear, accessible
+   • Eco glow pulse: Breathing green luminescence on key metrics
+   • Leaf particle: Subtle floating leaf shapes in background
+   • Confetti: Burst of green/gold micro-particles on achievement unlock
+   • Animated gradients: Slow-shifting hue on hero surfaces                  */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §1  ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Fade in from below — primary entrance for cards */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade in from left — sidebar items, timeline */
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Fade in from right — notifications, slide-ins */
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Scale up — modals, popovers */
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Spring bounce in — achievement unlocks, important reveals */
+@keyframes springIn {
+    0%   { opacity: 0; transform: scale(0.6); }
+    50%  { transform: scale(1.05); }
+    70%  { transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Stagger delay utility classes */
+.animate-in { animation: fadeInUp 0.6s var(--ease-out) forwards; opacity: 0; }
+.animate-in-left { animation: fadeInLeft 0.5s var(--ease-out) forwards; opacity: 0; }
+.animate-in-right { animation: fadeInRight 0.5s var(--ease-out) forwards; opacity: 0; }
+.animate-scale { animation: scaleIn 0.4s var(--ease-spring) forwards; opacity: 0; }
+.animate-spring { animation: springIn 0.6s var(--ease-spring) forwards; opacity: 0; }
+
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.1s; }
+.delay-3 { animation-delay: 0.15s; }
+.delay-4 { animation-delay: 0.2s; }
+.delay-5 { animation-delay: 0.25s; }
+.delay-6 { animation-delay: 0.3s; }
+.delay-7 { animation-delay: 0.35s; }
+.delay-8 { animation-delay: 0.4s; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §2  ECO GLOW PULSE
+   ═══════════════════════════════════════════════════════════════════════════
+
+   A breathing luminescence applied to key elements like eco score rings,
+   achievement icons, and call-to-action buttons. The glow expands and 
+   contracts like a living organism's bioluminescence — slow, organic,
+   hypnotic. Think deep-sea jellyfish or firefly meadow.                     */
+
+@keyframes ecoGlowPulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2),
+                    0 0 30px rgba(16, 185, 129, 0.1),
+                    0 0 45px rgba(16, 185, 129, 0.05);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.35),
+                    0 0 40px rgba(16, 185, 129, 0.2),
+                    0 0 60px rgba(16, 185, 129, 0.1);
+    }
+}
+
+@keyframes ecoGlowPulseSubtle {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.1),
+                    0 0 20px rgba(16, 185, 129, 0.05);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2),
+                    0 0 30px rgba(16, 185, 129, 0.1);
+    }
+}
+
+/* Text glow variant for numbers */
+@keyframes textGlowPulse {
+    0%, 100% {
+        text-shadow: 0 0 10px rgba(16, 185, 129, 0.3),
+                     0 0 20px rgba(16, 185, 129, 0.1);
+    }
+    50% {
+        text-shadow: 0 0 15px rgba(16, 185, 129, 0.5),
+                     0 0 30px rgba(16, 185, 129, 0.2);
+    }
+}
+
+.eco-glow {
+    animation: ecoGlowPulse 3s ease-in-out infinite;
+}
+
+.eco-glow-subtle {
+    animation: ecoGlowPulseSubtle 4s ease-in-out infinite;
+}
+
+.eco-text-glow {
+    animation: textGlowPulse 3s ease-in-out infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §3  ANIMATED GRADIENT — HERO SURFACES
+   ═══════════════════════════════════════════════════════════════════════════
+
+   A slow-shifting gradient that moves across hero sections and headers,
+   creating a living, breathing background. The movement is glacial —
+   like watching the aurora borealis in slow motion. Background-size is
+   enlarged (400%) and position animates across the full spectrum.            */
+
+@keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    25%  { background-position: 100% 50%; }
+    50%  { background-position: 100% 0%; }
+    75%  { background-position: 0% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.eco-animated-gradient {
+    background: linear-gradient(
+        135deg,
+        #065F46 0%,
+        #0D9488 20%,
+        #10B981 40%,
+        #06B6D4 60%,
+        #3B82F6 80%,
+        #6366F1 100%
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+/* Slower, more subtle variant */
+.eco-animated-gradient-slow {
+    background: linear-gradient(
+        160deg,
+        #064E3B 0%,
+        #065F46 25%,
+        #0D9488 50%,
+        #059669 75%,
+        #064E3B 100%
+    );
+    background-size: 300% 300%;
+    animation: gradientShift 25s ease infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §4  LEAF PARTICLE SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Subtle floating leaf shapes in the background — tiny, translucent,
+   drifting slowly downward with gentle horizontal sway. Like being 
+   inside a glass terrarium. Created with CSS pseudo-elements and 
+   clipPath for the leaf shape.
+
+   Visual description:
+   • 3-5 tiny leaf silhouettes (8-16px)
+   • Very low opacity (3-6%)
+   • Gentle downward drift + horizontal sine wave
+   • Emerald green tint
+   • Only visible on hero sections or large empty areas                      */
+
+@keyframes leafFloat {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.06;
+    }
+    50% {
+        transform: translate(30px, 50vh) rotate(180deg);
+        opacity: 0.04;
+    }
+    90% {
+        opacity: 0.06;
+    }
+    100% {
+        transform: translate(-20px, 100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes leafFloat2 {
+    0% {
+        transform: translate(0, 0) rotate(45deg);
+        opacity: 0;
+    }
+    15% { opacity: 0.05; }
+    50% {
+        transform: translate(-40px, 50vh) rotate(225deg);
+    }
+    85% { opacity: 0.05; }
+    100% {
+        transform: translate(15px, 100vh) rotate(405deg);
+        opacity: 0;
+    }
+}
+
+.eco-leaf-particles {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.eco-leaf {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--eco-primary-500);
+    clip-path: polygon(50% 0%, 80% 30%, 100% 70%, 50% 100%, 0% 70%, 20% 30%);
+    opacity: 0;
+}
+
+.eco-leaf:nth-child(1) {
+    top: -20px; left: 15%;
+    animation: leafFloat 18s linear infinite;
+    animation-delay: 0s;
+}
+
+.eco-leaf:nth-child(2) {
+    top: -20px; left: 45%;
+    width: 8px; height: 8px;
+    animation: leafFloat2 22s linear infinite;
+    animation-delay: 4s;
+}
+
+.eco-leaf:nth-child(3) {
+    top: -20px; left: 70%;
+    width: 14px; height: 14px;
+    animation: leafFloat 20s linear infinite;
+    animation-delay: 8s;
+}
+
+.eco-leaf:nth-child(4) {
+    top: -20px; left: 30%;
+    width: 10px; height: 10px;
+    animation: leafFloat2 25s linear infinite;
+    animation-delay: 12s;
+}
+
+.eco-leaf:nth-child(5) {
+    top: -20px; left: 85%;
+    width: 9px; height: 9px;
+    animation: leafFloat 19s linear infinite;
+    animation-delay: 6s;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §5  CONFETTI SUCCESS ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Triggered on achievement unlock. A burst of micro-particles in eco-green,
+   gold, and teal — like sustainable confetti made of tiny leaves and stars.
+
+   Visual description:
+   • 12-20 tiny particles (4-8px) burst outward from center
+   • Colors: eco-green, gold, teal, with a few white sparkles
+   • Each particle has a unique trajectory (radial outward)
+   • Particles rotate while flying, fade out before reaching edges
+   • Duration: ~1.5s — fast burst, slow float, quick fade
+   • Shape mix: circles (60%), tiny diamonds (20%), mini leaves (20%)        */
+
+@keyframes confettiBurst {
+    0% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+.eco-confetti-container {
+    position: fixed;
+    pointer-events: none;
+    z-index: var(--z-toast);
+}
+
+/* Individual particles are generated via JS, but styling is defined here */
+.eco-confetti-particle {
+    position: absolute;
+    border-radius: 50%;
+    animation: confettiBurst 1.5s var(--ease-out) forwards;
+}
+
+.eco-confetti-particle--leaf {
+    clip-path: polygon(50% 0%, 80% 30%, 100% 70%, 50% 100%, 0% 70%, 20% 30%);
+    border-radius: 0;
+}
+
+.eco-confetti-particle--diamond {
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    border-radius: 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §6  COUNTER ANIMATION (Number Rollup)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes countUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.eco-count-animate {
+    animation: countUp 0.3s var(--ease-out) forwards;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §7  LOADING STATES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.eco-skeleton {
+    background: linear-gradient(
+        110deg,
+        var(--app-surface-tertiary) 25%,
+        var(--app-surface-secondary) 37%,
+        var(--app-surface-tertiary) 63%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+    border-radius: var(--radius-md);
+}
+
+.eco-skeleton-text {
+    height: 1em;
+    margin-bottom: var(--space-2);
+    border-radius: var(--radius-xs);
+}
+
+.eco-skeleton-circle {
+    border-radius: 50%;
+}
+
+/* Spinning loader */
+@keyframes ecoSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.eco-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--app-surface-tertiary);
+    border-top-color: var(--eco-primary-500);
+    border-radius: 50%;
+    animation: ecoSpin 0.8s linear infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §8  HOVER & INTERACTION MICRO-STATES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Lift hover — used on cards, metrics */
+.eco-hover-lift {
+    transition: transform var(--duration-normal) var(--ease-default),
+                box-shadow var(--duration-normal) var(--ease-default);
+}
+
+.eco-hover-lift:hover {
+    transform: translateY(-4px);
+}
+
+/* Subtle scale on hover — icons, avatars */
+.eco-hover-scale {
+    transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.eco-hover-scale:hover {
+    transform: scale(1.08);
+}
+
+/* Glow on hover — interactive eco elements */
+.eco-hover-glow:hover {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2),
+                0 0 40px rgba(16, 185, 129, 0.1);
+}
+
+/* Color shift on hover — text links, icons */
+.eco-hover-color {
+    transition: color var(--duration-normal) var(--ease-default);
+}
+
+.eco-hover-color:hover {
+    color: var(--eco-primary-500);
+}
+
+/* Background reveal on hover */
+.eco-hover-reveal {
+    transition: background-color var(--duration-normal) var(--ease-default);
+}
+
+.eco-hover-reveal:hover {
+    background-color: var(--glass-green-5);
+}
+
+[data-theme="dark"] .eco-hover-reveal:hover {
+    background-color: rgba(16, 185, 129, 0.08);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §9  RIPPLE EFFECT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+.eco-ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.eco-ripple .ripple-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15);
+    transform: scale(0);
+    animation: ripple 0.6s linear;
+    pointer-events: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §10  REDUCED MOTION — ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .eco-leaf-particles { display: none; }
+    .eco-confetti-container { display: none; }
+}

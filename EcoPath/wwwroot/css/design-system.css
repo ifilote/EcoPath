@@ -1,0 +1,474 @@
+/* ╔══════════════════════════════════════════════════════════════════════════════╗
+   ║  ECOPATH — PREMIUM DESIGN SYSTEM                                          ║
+   ║  Nature × Technology Fusion · Bioluminescent Forest meets Data Terminal    ║
+   ║  Version 2.0 — February 2026                                              ║
+   ╚══════════════════════════════════════════════════════════════════════════════╝
+
+   BRAND PERSONALITY
+   ─────────────────
+   Emotional: Empowering, Hopeful, Intelligent, Alive
+   Visual:    Layered depth, Organic luminescence, Data-rich clarity
+   Feeling:   Opening this app should feel like stepping into a living forest
+              rendered by a supercomputer — warm bioluminescent greens pulse
+              beneath frosted glass surfaces, numbers glow with purpose,
+              and every interaction whispers: "You're making a difference."
+
+   DESIGN PHILOSOPHY
+   ─────────────────
+   • Depth over flatness — every surface exists on a z-axis
+   • Nature informs, technology empowers
+   • Data is beautiful when it breathes
+   • Darkness reveals light — dark mode is the soul of the brand
+   • Premium restraint: complexity in layers, simplicity in interaction
+
+   VISUAL MOOD
+   ────────────
+   Imagine a satellite view of Earth's forests at twilight, overlaid with 
+   luminous data streams. The dashboard feels like a command center for 
+   planetary healing — atmospheric, immersive, alive. Eco scores don't just 
+   display; they emanate. Dark mode at night feels like floating in a 
+   bioluminescent ocean — deep navy darkness with breathing teal and emerald 
+   pulses that make every data point feel consequential.
+
+   STYLE REFERENCES
+   ─────────────────
+   Apple Fitness+ (data visualization polish)
+   × Strava Summit (achievement gamification)  
+   × Bloomberg Terminal (information density)
+   × Stripe Dashboard (surface elegance)
+   × A climate-tech unicorn's Series C rebrand
+
+   ════════════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §1  COLOR SYSTEM — TOKEN ARCHITECTURE
+   ═══════════════════════════════════════════════════════════════════════════
+
+   COLOR PSYCHOLOGY & STRATEGY
+   ───────────────────────────
+   GREEN (Primary):   Growth, renewal, eco-consciousness. Deep emerald signals
+                      premium trust; vivid teal adds technological edge.
+   BLUE (Secondary):  Intelligence, depth, data-clarity. Ocean blues ground the 
+                      experience; indigo adds dimension and sophistication.
+   AMBER (Accent):    Energy, warmth, achievement. Solar amber feels earned 
+                      and aspirational — used for calories, rewards.
+   CYAN (Semantic):   CO₂ reduction — cool, atmospheric, tied to sky/air.
+   CORAL (Semantic):  Calorie burn — warm, active, physical.
+   GOLD (Semantic):   Achievement — rare, celebratory, exclusive.
+
+   CONTRAST STRATEGY
+   ──────────────────
+   • All text on surfaces meets WCAG AA (4.5:1 for normal, 3:1 for large)
+   • Critical data labels target AAA (7:1)
+   • Interactive elements maintain 3:1 against adjacent non-text
+   • Glassmorphism text uses text-shadow for legibility insurance
+   • Semantic colors are tested against both light/dark surfaces                */
+
+:root {
+    /* ── 1a. PRIMARY PALETTE ────────────────────────────────────────────── */
+    /* Deep Emerald → Vivid Teal progression                                  */
+    --eco-primary-50:   #ECFDF5;    /* Whisper green — subtle bg fills        */
+    --eco-primary-100:  #D1FAE5;    /* Soft mint — hover backgrounds          */
+    --eco-primary-200:  #A7F3D0;    /* Spring green — light accents           */
+    --eco-primary-300:  #6EE7B7;    /* Meadow — progress fills               */
+    --eco-primary-400:  #34D399;    /* Vivid emerald — interactive states     */
+    --eco-primary-500:  #10B981;    /* Core green — primary CTA               */
+    --eco-primary-600:  #059669;    /* Deep emerald — premium emphasis        */
+    --eco-primary-700:  #047857;    /* Forest — strong contrast               */
+    --eco-primary-800:  #065F46;    /* Dark canopy — headers on light         */
+    --eco-primary-900:  #064E3B;    /* Midnight forest — deepest accent       */
+
+    /* ── 1b. SECONDARY PALETTE ──────────────────────────────────────────── */
+    /* Ocean Blue → Electric Indigo spectrum                                  */
+    --eco-blue-50:      #EFF6FF;
+    --eco-blue-100:     #DBEAFE;
+    --eco-blue-200:     #BFDBFE;
+    --eco-blue-300:     #93C5FD;
+    --eco-blue-400:     #60A5FA;
+    --eco-blue-500:     #3B82F6;    /* Core blue — secondary CTA              */
+    --eco-blue-600:     #2563EB;
+    --eco-blue-700:     #1D4ED8;
+    --eco-indigo-400:   #818CF8;
+    --eco-indigo-500:   #6366F1;    /* Electric indigo — gamification         */
+    --eco-indigo-600:   #4F46E5;
+
+    /* ── 1c. ACCENT PALETTE ────────────────────────────────────────────── */
+    /* Solar Amber + Aurora Pink + Electric Teal                              */
+    --eco-amber-300:    #FCD34D;
+    --eco-amber-400:    #FBBF24;
+    --eco-amber-500:    #F59E0B;    /* Solar amber — energy, calories         */
+    --eco-amber-600:    #D97706;
+    --eco-pink-400:     #F472B6;
+    --eco-pink-500:     #EC4899;    /* Aurora pink — highlights               */
+    --eco-pink-600:     #DB2777;
+    --eco-teal-300:     #5EEAD4;
+    --eco-teal-400:     #2DD4BF;
+    --eco-teal-500:     #14B8A6;    /* Electric teal — data accent            */
+
+    /* ── 1d. GRADIENT SYSTEMS ──────────────────────────────────────────── */
+    /* Multi-stop gradient combinations with precise angles                   */
+
+    /* Hero gradients — large surfaces, headers, hero sections                */
+    --grad-emerald-glow:      linear-gradient(135deg, #065F46 0%, #10B981 50%, #34D399 100%);
+    --grad-ocean-depth:       linear-gradient(135deg, #1E3A5F 0%, #0EA5E9 50%, #22D3EE 100%);
+    --grad-aurora-borealis:   linear-gradient(135deg, #064E3B 0%, #0D9488 35%, #06B6D4 65%, #818CF8 100%);
+    --grad-sunset-eco:        linear-gradient(135deg, #059669 0%, #0EA5E9 50%, #6366F1 100%);
+    --grad-midnight-forest:   linear-gradient(160deg, #0A0F1C 0%, #064E3B 40%, #0D9488 100%);
+
+    /* Accent gradients — buttons, badges, small surfaces                     */
+    --grad-eco-action:        linear-gradient(135deg, #10B981 0%, #0D9488 100%);
+    --grad-data-blue:         linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+    --grad-energy-warm:       linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+    --grad-achievement-gold:  linear-gradient(135deg, #F59E0B 0%, #FBBF24 50%, #FCD34D 100%);
+    --grad-coral-burn:        linear-gradient(135deg, #FF6B6B 0%, #EE5A24 100%);
+
+    /* Mesh gradients — background ambience (applied via pseudo-elements)     */
+    --grad-mesh-eco:          radial-gradient(ellipse at 20% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
+                              radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                              radial-gradient(ellipse at 50% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+
+    /* Shimmer gradient — animated loading / decorative                       */
+    --grad-shimmer:           linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.08) 37%, transparent 63%);
+
+    /* ── 1e. SEMANTIC COLORS ──────────────────────────────────────────── */
+    /*                                                                        */
+    /* ECO-POSITIVE: Cyan-teal tone — evokes clean air, atmosphere            */
+    /* Chosen cyan over green to differentiate from primary brand color        */
+    --semantic-eco-positive:        #22D3EE;    /* Bright sky cyan            */
+    --semantic-eco-positive-soft:   rgba(34, 211, 238, 0.15);
+    --semantic-eco-positive-glow:   0 0 20px rgba(34, 211, 238, 0.3);
+
+    /* CO₂ REDUCTION: Cool teal — tied to atmospheric/planetary healing       */
+    --semantic-co2:                 #0D9488;    /* Deep teal                  */
+    --semantic-co2-soft:            rgba(13, 148, 136, 0.15);
+    --semantic-co2-glow:            0 0 20px rgba(13, 148, 136, 0.3);
+
+    /* CALORIE BURN: Warm coral — physical energy, body heat, effort          */
+    --semantic-calorie:             #FF6B6B;    /* Warm coral                 */
+    --semantic-calorie-soft:        rgba(255, 107, 107, 0.15);
+    --semantic-calorie-glow:        0 0 20px rgba(255, 107, 107, 0.3);
+
+    /* ACHIEVEMENT: Pure gold — rare, earned, celebratory                     */
+    --semantic-achievement:         #FFD700;    /* True gold                  */
+    --semantic-achievement-soft:    rgba(255, 215, 0, 0.15);
+    --semantic-achievement-glow:    0 0 20px rgba(255, 215, 0, 0.35);
+
+    /* WARNING: Alert amber — clear warning without alarm                     */
+    --semantic-warning:             #F59E0B;
+    --semantic-warning-soft:        rgba(245, 158, 11, 0.15);
+
+    /* ERROR / DESTRUCTIVE: Signal red                                        */
+    --semantic-error:               #EF4444;
+    --semantic-error-soft:          rgba(239, 68, 68, 0.12);
+
+    /* SUCCESS: Brand green — confirmation, positive action                   */
+    --semantic-success:             #10B981;
+    --semantic-success-soft:        rgba(16, 185, 129, 0.12);
+
+    /* NEUTRAL METRICS: Cool slate — unremarkable, stable                     */
+    --semantic-neutral:             #94A3B8;
+    --semantic-neutral-soft:        rgba(148, 163, 184, 0.12);
+
+    /* ── 1f. DARK MODE PALETTE (PRIMARY) ──────────────────────────────── */
+    /* Deep space darkness with living organic accent glows                    */
+    --dark-bg-base:         #0A0F1C;    /* Void — deepest background          */
+    --dark-bg-primary:      #0F172A;    /* Midnight — main canvas             */
+    --dark-bg-secondary:    #1E293B;    /* Charcoal slate — card surfaces     */
+    --dark-bg-tertiary:     #334155;    /* Slate — elevated surfaces          */
+    --dark-bg-elevated:     #475569;    /* Mist — highest elevation           */
+    --dark-border-subtle:   rgba(148, 163, 184, 0.1);
+    --dark-border-default:  rgba(148, 163, 184, 0.15);
+    --dark-border-strong:   rgba(148, 163, 184, 0.25);
+    --dark-text-primary:    #F1F5F9;    /* Almost white — primary text        */
+    --dark-text-secondary:  #94A3B8;    /* Cool gray — labels, captions       */
+    --dark-text-tertiary:   #64748B;    /* Muted — disabled, placeholder      */
+
+    /* ── 1g. LIGHT MODE PALETTE ───────────────────────────────────────── */
+    --light-bg-base:        #F0FDF4;    /* Whisper green tinted white         */
+    --light-bg-primary:     #FFFFFF;    /* Pure white — main canvas           */
+    --light-bg-secondary:   #F8FAFC;    /* Cool white — card surfaces         */
+    --light-bg-tertiary:    #F1F5F9;    /* Soft gray — elevated               */
+    --light-border-subtle:  rgba(0, 0, 0, 0.04);
+    --light-border-default: rgba(0, 0, 0, 0.08);
+    --light-border-strong:  rgba(0, 0, 0, 0.15);
+    --light-text-primary:   #0F172A;    /* Near black — primary text          */
+    --light-text-secondary: #475569;    /* Slate — labels, captions           */
+    --light-text-tertiary:  #94A3B8;    /* Light gray — disabled              */
+
+    /* ── 1h. GLASSMORPHISM TONES ──────────────────────────────────────── */
+    /* Frosted glass surfaces with varying opacity levels                      */
+    --glass-white-5:     rgba(255, 255, 255, 0.05);    /* Barely there        */
+    --glass-white-8:     rgba(255, 255, 255, 0.08);    /* Subtle layer        */
+    --glass-white-12:    rgba(255, 255, 255, 0.12);    /* Visible frost       */
+    --glass-white-20:    rgba(255, 255, 255, 0.20);    /* Card surface        */
+    --glass-white-40:    rgba(255, 255, 255, 0.40);    /* Prominent           */
+    --glass-white-60:    rgba(255, 255, 255, 0.60);    /* Strong frost        */
+    --glass-dark-5:      rgba(0, 0, 0, 0.05);
+    --glass-dark-10:     rgba(0, 0, 0, 0.10);
+    --glass-dark-20:     rgba(0, 0, 0, 0.20);
+    --glass-dark-40:     rgba(0, 0, 0, 0.40);
+    --glass-green-5:     rgba(16, 185, 129, 0.05);     /* Eco-tinted glass    */
+    --glass-green-10:    rgba(16, 185, 129, 0.10);
+    --glass-green-15:    rgba(16, 185, 129, 0.15);
+    --glass-teal-8:      rgba(13, 148, 136, 0.08);
+    --glass-blue-8:      rgba(59, 130, 246, 0.08);
+
+
+    /* ═══════════════════════════════════════════════════════════════════
+       §2  TYPOGRAPHY SYSTEM
+       ═══════════════════════════════════════════════════════════════════
+
+       FONT PAIRING STRATEGY
+       ──────────────────────
+       Display + Headlines:  "Plus Jakarta Sans" — Geometric, premium, modern.
+                             Wide letter-spacing, strong at large sizes.
+                             Personality: Confident, clean, architectural.
+
+       Body + UI:           "Inter" — Optimized for screens, excellent 
+                             x-height, clear at small sizes. Tabular nums 
+                             available. Personality: Trustworthy, readable.
+
+       Data + Numbers:      "JetBrains Mono" — Monospaced, tabular figures. 
+                             Perfect for dashboard metrics, eco scores, 
+                             counters. Personality: Technical, precise.
+
+       Numeric Dashboard Display: "Space Grotesk" — Geometric, beautiful at 
+                             large sizes, excellent for big score numbers.
+                             Personality: Futuristic, authoritative.             */
+
+    /* Font families */
+    --font-display:     'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-body:        'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-mono:        'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    --font-data:        'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+    /* ── Type Scale (fluid, modular — 1.25 ratio) ───────────────────── */
+    /* Display: Used for hero eco score numbers                           */
+    --text-display-xl:  clamp(3.5rem, 5vw, 5rem);      /* 56-80px           */
+    --text-display-lg:  clamp(2.75rem, 4vw, 4rem);     /* 44-64px           */
+    --text-display-md:  clamp(2rem, 3vw, 3rem);        /* 32-48px           */
+
+    /* Headlines: Section titles, card headers                            */
+    --text-h1:          clamp(1.75rem, 2.5vw, 2.25rem);/* 28-36px           */
+    --text-h2:          clamp(1.375rem, 2vw, 1.75rem); /* 22-28px           */
+    --text-h3:          clamp(1.125rem, 1.5vw, 1.375rem);/* 18-22px         */
+    --text-h4:          1.125rem;                        /* 18px              */
+    --text-h5:          1rem;                            /* 16px              */
+    --text-h6:          0.875rem;                        /* 14px              */
+
+    /* Body text                                                          */
+    --text-body-lg:     1.125rem;    /* 18px — prominent copy             */
+    --text-body-md:     1rem;        /* 16px — standard body              */
+    --text-body-sm:     0.875rem;    /* 14px — captions, labels           */
+    --text-body-xs:     0.75rem;     /* 12px — fine print, badges         */
+
+    /* ── Letter Spacing ─────────────────────────────────────────────── */
+    --tracking-tightest: -0.03em;    /* Display numbers                   */
+    --tracking-tighter:  -0.02em;    /* H1, large headlines               */
+    --tracking-tight:    -0.01em;    /* H2-H3                             */
+    --tracking-normal:    0;         /* Body text                         */
+    --tracking-wide:      0.025em;   /* Buttons, labels                   */
+    --tracking-wider:     0.05em;    /* Badges, overlines                 */
+    --tracking-widest:    0.1em;     /* Section overlines, all-caps       */
+
+    /* ── Font Weights ───────────────────────────────────────────────── */
+    --weight-regular:   400;
+    --weight-medium:    500;
+    --weight-semibold:  600;
+    --weight-bold:      700;
+    --weight-extrabold: 800;
+
+    /* ── Line Heights ───────────────────────────────────────────────── */
+    --leading-none:     1;           /* Display numbers                   */
+    --leading-tight:    1.2;         /* Headlines                         */
+    --leading-snug:     1.375;       /* Subheadlines                      */
+    --leading-normal:   1.5;         /* Body text                         */
+    --leading-relaxed:  1.625;       /* Long-form content                 */
+
+
+    /* ═══════════════════════════════════════════════════════════════════
+       §3  SPACING & LAYOUT SYSTEM — 8pt Grid
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* ── Spacing Scale (8pt base) ───────────────────────────────────── */
+    --space-0:      0;
+    --space-0_5:    0.125rem;   /* 2px  — hairline                       */
+    --space-1:      0.25rem;    /* 4px  — micro gap                      */
+    --space-1_5:    0.375rem;   /* 6px  — tight padding                  */
+    --space-2:      0.5rem;     /* 8px  — base unit                      */
+    --space-3:      0.75rem;    /* 12px — small gap                      */
+    --space-4:      1rem;       /* 16px — standard gap                   */
+    --space-5:      1.25rem;    /* 20px — comfortable gap                */
+    --space-6:      1.5rem;     /* 24px — section padding                */
+    --space-8:      2rem;       /* 32px — card padding                   */
+    --space-10:     2.5rem;     /* 40px — large section gap              */
+    --space-12:     3rem;       /* 48px — hero padding                   */
+    --space-16:     4rem;       /* 64px — section divider                */
+    --space-20:     5rem;       /* 80px — page section gap               */
+    --space-24:     6rem;       /* 96px — hero section                   */
+
+    /* ── Border Radius System ───────────────────────────────────────── */
+    --radius-xs:    4px;        /* Badges, tags                          */
+    --radius-sm:    8px;        /* Inputs, small buttons                 */
+    --radius-md:    12px;       /* Cards (small), buttons                */
+    --radius-lg:    16px;       /* Standard cards                        */
+    --radius-xl:    20px;       /* Feature cards, panels                 */
+    --radius-2xl:   24px;       /* Hero cards, modals                    */
+    --radius-3xl:   32px;       /* Full hero sections                    */
+    --radius-full:  9999px;     /* Pills, avatars, circular              */
+
+    /* ── Shadow System (Elevation Levels) ───────────────────────────── */
+    /*                                                                    */
+    /* Uses layered shadows for naturalistic depth perception              */
+    /* Each level = ambient + key light shadow                            */
+    /*                                                                    */
+    --shadow-xs:    0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.06),
+                    0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md:    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+                    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg:    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+                    0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-xl:    0 20px 25px -5px rgba(0, 0, 0, 0.08),
+                    0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    --shadow-2xl:   0 25px 50px -12px rgba(0, 0, 0, 0.15);
+
+    /* Colored glow shadows                                               */
+    --shadow-eco-sm:    0 4px 14px rgba(16, 185, 129, 0.15);
+    --shadow-eco-md:    0 8px 25px rgba(16, 185, 129, 0.2);
+    --shadow-eco-lg:    0 12px 40px rgba(16, 185, 129, 0.25);
+    --shadow-blue-sm:   0 4px 14px rgba(59, 130, 246, 0.15);
+    --shadow-blue-md:   0 8px 25px rgba(59, 130, 246, 0.2);
+    --shadow-amber-sm:  0 4px 14px rgba(245, 158, 11, 0.15);
+    --shadow-gold-md:   0 8px 25px rgba(255, 215, 0, 0.2);
+
+    /* ── Depth Layers (z-index) ─────────────────────────────────────── */
+    --z-base:       0;
+    --z-dropdown:   10;
+    --z-sticky:     20;
+    --z-overlay:    30;
+    --z-modal:      40;
+    --z-popover:    50;
+    --z-toast:      60;
+    --z-tooltip:    70;
+    --z-max:        100;
+
+    /* ── Glass Effect Layering Rules ────────────────────────────────── */
+    /*                                                                    */
+    /* Layer 0 (Base):     Solid dark surface, no blur                    */
+    /* Layer 1 (Card):     backdrop-filter: blur(20px), 5-8% white fill  */
+    /* Layer 2 (Elevated): backdrop-filter: blur(40px), 10-15% white fill*/
+    /* Layer 3 (Modal):    backdrop-filter: blur(60px), 15-20% white fill*/
+    /* Layer 4 (Tooltip):  backdrop-filter: blur(80px), 20-25% white fill*/
+    /*                                                                    */
+    --blur-sm:      8px;
+    --blur-md:      20px;
+    --blur-lg:      40px;
+    --blur-xl:      60px;
+    --blur-2xl:     80px;
+
+    /* ── Transitions ────────────────────────────────────────────────── */
+    --ease-default:     cubic-bezier(0.4, 0, 0.2, 1);   /* Material standard  */
+    --ease-in:          cubic-bezier(0.4, 0, 1, 1);
+    --ease-out:         cubic-bezier(0, 0, 0.2, 1);
+    --ease-spring:      cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy           */
+    --ease-smooth:      cubic-bezier(0.25, 0.1, 0.25, 1);  /* Smooth decel     */
+
+    --duration-fast:    150ms;
+    --duration-normal:  250ms;
+    --duration-slow:    400ms;
+    --duration-slower:  600ms;
+    --duration-slowest: 1000ms;
+
+    /* ═══════════════════════════════════════════════════════════════════
+       §4  RESOLVED THEME TOKENS (Light Mode Default)
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* Application-level semantic tokens that switch with theme           */
+    --app-bg:               var(--light-bg-base);
+    --app-surface:          var(--light-bg-primary);
+    --app-surface-secondary:var(--light-bg-secondary);
+    --app-surface-tertiary: var(--light-bg-tertiary);
+    --app-text:             var(--light-text-primary);
+    --app-text-secondary:   var(--light-text-secondary);
+    --app-text-tertiary:    var(--light-text-tertiary);
+    --app-border:           var(--light-border-default);
+    --app-border-subtle:    var(--light-border-subtle);
+
+    /* Glass surfaces — light mode uses white glass                       */
+    --app-glass-surface:    var(--glass-white-60);
+    --app-glass-card:       var(--glass-white-40);
+    --app-glass-subtle:     var(--glass-white-20);
+    --app-glass-border:     rgba(255, 255, 255, 0.5);
+
+    /* Navbar */
+    --nav-bg:               rgba(255, 255, 255, 0.8);
+    --nav-text:             var(--light-text-primary);
+    --nav-text-hover:       var(--eco-primary-600);
+    --nav-border:           var(--light-border-subtle);
+    --nav-blur:             var(--blur-lg);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   §5  DARK MODE OVERRIDE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"],
+.dark-mode {
+    --app-bg:               var(--dark-bg-base);
+    --app-surface:          var(--dark-bg-primary);
+    --app-surface-secondary:var(--dark-bg-secondary);
+    --app-surface-tertiary: var(--dark-bg-tertiary);
+    --app-text:             var(--dark-text-primary);
+    --app-text-secondary:   var(--dark-text-secondary);
+    --app-text-tertiary:    var(--dark-text-tertiary);
+    --app-border:           var(--dark-border-default);
+    --app-border-subtle:    var(--dark-border-subtle);
+
+    /* Glass surfaces — dark mode uses dark glass with green tint          */
+    --app-glass-surface:    rgba(15, 23, 42, 0.75);
+    --app-glass-card:       rgba(30, 41, 59, 0.6);
+    --app-glass-subtle:     rgba(30, 41, 59, 0.3);
+    --app-glass-border:     rgba(148, 163, 184, 0.08);
+
+    /* Navbar dark */
+    --nav-bg:               rgba(10, 15, 28, 0.85);
+    --nav-text:             var(--dark-text-primary);
+    --nav-text-hover:       var(--eco-primary-400);
+    --nav-border:           var(--dark-border-subtle);
+
+    /* Shadow intensity increase for dark mode                             */
+    --shadow-xs:    0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md:    0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-lg:    0 10px 15px rgba(0, 0, 0, 0.35), 0 4px 6px rgba(0, 0, 0, 0.2);
+    --shadow-xl:    0 20px 25px rgba(0, 0, 0, 0.4), 0 8px 10px rgba(0, 0, 0, 0.2);
+    --shadow-2xl:   0 25px 50px rgba(0, 0, 0, 0.5);
+
+    color-scheme: dark;
+}
+
+/* Prefer system dark mode when no explicit theme set */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --app-bg:               var(--dark-bg-base);
+        --app-surface:          var(--dark-bg-primary);
+        --app-surface-secondary:var(--dark-bg-secondary);
+        --app-surface-tertiary: var(--dark-bg-tertiary);
+        --app-text:             var(--dark-text-primary);
+        --app-text-secondary:   var(--dark-text-secondary);
+        --app-text-tertiary:    var(--dark-text-tertiary);
+        --app-border:           var(--dark-border-default);
+        --app-border-subtle:    var(--dark-border-subtle);
+        --app-glass-surface:    rgba(15, 23, 42, 0.75);
+        --app-glass-card:       rgba(30, 41, 59, 0.6);
+        --app-glass-subtle:     rgba(30, 41, 59, 0.3);
+        --app-glass-border:     rgba(148, 163, 184, 0.08);
+        --nav-bg:               rgba(10, 15, 28, 0.85);
+        --nav-text:             var(--dark-text-primary);
+        --nav-text-hover:       var(--eco-primary-400);
+        --nav-border:           var(--dark-border-subtle);
+    }
+}
