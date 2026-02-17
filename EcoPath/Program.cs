@@ -1,5 +1,6 @@
 using EcoPath.Data;
 using EcoPath.Models;
+using EcoPath.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,20 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.R
     .AddRoles<IdentityRole>() 
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+
+// ═══════ Weather + Quote Services ═══════
+// HttpClient: managed pool via IHttpClientFactory — prevents socket exhaustion
+builder.Services.AddHttpClient("WeatherApi", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
+// MemoryCache: 15-min TTL for weather data — matches POLL_INTERVAL on frontend
+builder.Services.AddMemoryCache();
+// Scoped: one WeatherService per request (uses HttpClient + Cache)
+builder.Services.AddScoped<IWeatherService, WeatherService>();
+// Singleton: QuoteService holds static data + thread-safe last-index tracker
+builder.Services.AddSingleton<IQuoteService, QuoteService>();
 
 var app = builder.Build();
 
