@@ -1,0 +1,170 @@
+﻿@model EcoPath.Models.MapViewModel
+
+@{
+    ViewData["Title"] = "Explorare Eco";
+    // Eliminăm padding-ul standard al paginii pentru a lăsa harta full-screen
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* Suprascriem containerul principal pentru această pagină */
+    main {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    footer {
+        display: none;
+    }
+    /* Ascundem footerul pe pagina hărții */
+
+    /* Containerul Hărții */
+    #map-container {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 76px); /* Scădem înălțimea navbar-ului */
+        overflow: hidden;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Panoul Plutitor (Glassmorphism) */
+    .floating-panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 380px;
+        max-height: calc(100vh - 120px);
+        background: var(--glass-white-10, rgba(255, 255, 255, 0.9));
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        overflow-y: auto;
+    }
+
+        /* Starea Minimizată */
+        .floating-panel.minimized {
+            transform: translateX(calc(-100% - 20px));
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    /* Butonul de Toggle (Apare când panoul e ascuns) */
+    #toggle-panel-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 9;
+        background: white;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+        #toggle-panel-btn:hover {
+            transform: scale(1.05);
+        }
+
+    /* Controalele de selecție Pin */
+    .pin-btn {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .pin-btn.active {
+            background-color: var(--eco-primary-500) !important;
+            color: white !important;
+            border-color: var(--eco-primary-500) !important;
+        }
+
+        .pin-btn:hover:not(.active) {
+            background-color: #f8f9fa;
+        }
+</style>
+
+<div id="map-container">
+    <div id="map"></div>
+
+    <div id="toggle-panel-btn" onclick="togglePanel(true)">
+        <i class="bi bi-search fs-4 text-primary"></i>
+    </div>
+
+    <div class="floating-panel p-4" id="main-panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0" style="font-family: var(--font-display);">Planificator</h4>
+            <button class="btn btn-sm btn-light rounded-circle" onclick="togglePanel(false)">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small text-muted fw-bold">PLECARE</label>
+            <div class="input-group shadow-sm">
+                <input type="text" id="start-input" class="form-control border-end-0" placeholder="Caută adresă...">
+                <button class="btn border border-start-0 bg-white pin-btn" id="btn-pin-start" title="Alege de pe hartă">
+                    <i class="bi bi-geo-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small text-muted fw-bold">DESTINAȚIE</label>
+            <div class="input-group shadow-sm">
+                <input type="text" id="end-input" class="form-control border-end-0" placeholder="Caută adresă...">
+                <button class="btn border border-start-0 bg-white pin-btn" id="btn-pin-end" title="Alege de pe hartă">
+                    <i class="bi bi-geo-fill text-danger"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-4 mt-2">
+            <input type="radio" class="btn-check" name="travelMode" id="mode-driving" value="DRIVING" checked>
+            <label class="btn btn-outline-secondary flex-grow-1" for="mode-driving"><i class="bi bi-car-front"></i></label>
+
+            <input type="radio" class="btn-check" name="travelMode" id="mode-transit" value="TRANSIT">
+            <label class="btn btn-outline-success flex-grow-1" for="mode-transit"><i class="bi bi-bus-front"></i></label>
+
+            <input type="radio" class="btn-check" name="travelMode" id="mode-bicycling" value="BICYCLING">
+            <label class="btn btn-outline-success flex-grow-1" for="mode-bicycling"><i class="bi bi-bicycle"></i></label>
+
+            <input type="radio" class="btn-check" name="travelMode" id="mode-walking" value="WALKING">
+            <label class="btn btn-outline-success flex-grow-1" for="mode-walking"><i class="bi bi-person-walking"></i></label>
+        </div>
+
+        <button id="calc-route-btn" class="btn w-100 py-2 fw-bold text-white shadow-sm mb-3" style="background: linear-gradient(135deg, var(--eco-primary-600) 0%, #0D9488 100%); border-radius: 10px;">
+            Calculează Ruta
+        </button>
+
+        <div id="results-container" class="mt-2 d-none">
+            <h6 class="fw-bold mb-2 border-bottom pb-2">Variante disponibile</h6>
+            <div id="results-content" class="d-flex flex-column gap-2"></div>
+
+            <div id="eco-suggestion-container" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/eco-map.js" asp-append-version="true"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=@Model.GoogleMapsApiKey&libraries=places&callback=initEcoMap"></script>
+}
