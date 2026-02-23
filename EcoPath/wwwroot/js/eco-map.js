@@ -21,12 +21,26 @@ const EcoMap = (() => {
 
     // ── Route state ──
     let currentRoutesData = [];
-    let selectedRouteIndex = 0;
+    let selectedRouteIndex = -1;  // -1 = no route selected yet
+    let hasUserSelectedRoute = false; // true after explicit user click
 
     // ── Geolocation state ──
     let userLatLng = null;        // Current user position {lat, lng}
     let watchId = null;           // watchPosition ID
     let hasInitialLocation = false;
+
+    // ═══════════════════════════════════════════════════════════
+    //  MODE COLOR PALETTE — distinct base + shades per transport
+    //  Main route  → shades[0] (darkest), thick, high opacity
+    //  Alt route 1 → shades[1] (lighter), thin, low opacity
+    //  Alt route 2 → shades[2] (lightest), thin, low opacity
+    // ═══════════════════════════════════════════════════════════
+    const MODE_COLORS = {
+        DRIVING:   { base: '#3B82F6', shades: ['#3B82F6', '#60A5FA', '#93C5FD'] },   // Blue
+        WALKING:   { base: '#10B981', shades: ['#10B981', '#34D399', '#6EE7B7'] },   // Green
+        BICYCLING: { base: '#F59E0B', shades: ['#F59E0B', '#FBBF24', '#FCD34D'] },   // Orange
+        TRANSIT:   { base: '#8B5CF6', shades: ['#8B5CF6', '#A78BFA', '#C4B5FD'] }    // Purple
+    };
 
     // ── Debounce timer for live route updates ──
     let routeUpdateTimer = null;
@@ -34,6 +48,114 @@ const EcoMap = (() => {
 
     // ── Minimum movement threshold (meters) to trigger marker update ──
     const MIN_MOVE_THRESHOLD = 5;
+
+    // ═══════════════════════════════════════════════════════════
+    //  TRIP STATE MACHINE
+    //  States: IDLE → ROUTE_SELECTED → NAVIGATING ⇄ PAUSED → FINISHED
+    //  Transitions are enforced through setTripState()
+    // ═══════════════════════════════════════════════════════════
+    const TripState = Object.freeze({
+        IDLE:           'IDLE',            // No route selected
+        ROUTE_SELECTED: 'ROUTE_SELECTED',  // Route chosen, Start Trip available
+        NAVIGATING:     'NAVIGATING',      // Active turn-by-turn navigation
+        PAUSED:         'PAUSED',          // Navigation paused, state preserved
+        FINISHED:       'FINISHED'         // Trip completed or stopped
+    });
+
+    let tripState = TripState.IDLE;
+
+    // ── Navigation-specific state ──
+    const ARRIVAL_RADIUS = 40;          // meters — triggers arrival detection
+    const NAV_STEP_ADVANCE_RADIUS = 30; // meters — advance to next instruction
+    let navWatchId = null;              // watchPosition ID for nav tracking
+    let navStartTime = null;            // Date when trip started
+    let navDistanceCovered = 0;         // meters traveled so far
+    let navLastLatLng = null;           // last position for distance accumulation
+    let navStepIndex = 0;               // current step in route instructions
+    let navRoute = null;                // reference to selected route object
+    let navHudEl = null;                // navigation HUD DOM element
+    let navPreTilt = 0;                 // map tilt before navigation
+    let navPreZoom = 13;                // map zoom before navigation
+    let navPreCenter = null;            // map center before navigation
+
+    /** Transition the state machine with logging */
+    function setTripState(newState) {
+        const prev = tripState;
+        tripState = newState;
+        console.log(`[EcoPath] State: ${prev} → ${newState}`);
+        // Reflect state on <body> for CSS hooks
+        document.body.dataset.tripState = newState.toLowerCase();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  BACKEND SYNC STATE — Trip persistence via API
+    // ═══════════════════════════════════════════════════════════
+    let activeTripId = null;             // Server-assigned trip ID
+    let syncIntervalId = null;           // setInterval ID for periodic updates
+    const SYNC_INTERVAL_MS = 20000;      // 20 seconds between periodic syncs
+
+    // ═══════════════════════════════════════════════════════════
+    //  TRIP SERVICE — fetch()-based API layer
+    //  All calls are fire-and-forget-safe; navigation continues
+    //  even if the backend is unreachable.
+    // ═══════════════════════════════════════════════════════════
+    const TripService = {
+        /** Read the CSRF token from the hidden input rendered by @Html.AntiForgeryToken() */
+        _getToken() {
+            const el = document.querySelector('input[name="__RequestVerificationToken"]');
+            return el ? el.value : '';
+        },
+
+        /** Common fetch wrapper — JSON body + CSRF header */
+        async _post(url, body) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': this._getToken()
+                    },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) {
+                    console.warn(`[TripService] ${url} → ${res.status}`);
+                    return null;
+                }
+                return await res.json();
+            } catch (err) {
+                console.warn(`[TripService] ${url} failed:`, err.message);
+                return null; // graceful degradation — nav continues offline
+            }
+        },
+
+        /**
+         * POST /Trip/ApiStart — create trip record, returns { tripId, status, startTime }
+         */
+        async start(payload) {
+            return this._post('/Trip/ApiStart', payload);
+        },
+
+        /**
+         * POST /Trip/ApiUpdate — periodic sync during navigation
+         */
+        async update(payload) {
+            return this._post('/Trip/ApiUpdate', payload);
+        },
+
+        /**
+         * POST /Trip/ApiFinish — mark trip as completed, returns summary data
+         */
+        async finish(payload) {
+            return this._post('/Trip/ApiFinish', payload);
+        },
+
+        /**
+         * POST /Trip/ApiCancel — mark trip as canceled, returns partial summary
+         */
+        async cancel(payload) {
+            return this._post('/Trip/ApiCancel', payload);
+        }
+    };
 
     // ═══════════════════════════════════════════════════════════
     //  1. ECO GREEN MAP STYLE — Nature-inspired with green tones
@@ -421,6 +543,9 @@ const EcoMap = (() => {
     /** Allow clicking on the map to set destination */
     function setupMapClickDestination() {
         map.addListener('click', (e) => {
+            // Block destination changes during active navigation
+            if (tripState === TripState.NAVIGATING || tripState === TripState.PAUSED) return;
+
             const latLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
             const destInput = document.getElementById('dest-input');
 
@@ -431,6 +556,9 @@ const EcoMap = (() => {
 
     /** Set destination, place marker, and auto-calculate route */
     function setDestination(latLng, label = null) {
+        // Block destination changes during active navigation
+        if (tripState === TripState.NAVIGATING || tripState === TripState.PAUSED) return;
+
         // Place or move destination marker
         if (destinationMarker) {
             destinationMarker.setPosition(latLng);
@@ -464,6 +592,9 @@ const EcoMap = (() => {
 
         buttons.forEach(btn => {
             btn.addEventListener('click', () => {
+                // Block mode changes during active navigation
+                if (tripState === TripState.NAVIGATING || tripState === TripState.PAUSED) return;
+
                 // Update active state
                 buttons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -488,6 +619,8 @@ const EcoMap = (() => {
 
     function calculateRoute() {
         if (!userLatLng || !destinationMarker) return;
+        // Don't recalculate during active navigation
+        if (tripState === TripState.NAVIGATING || tripState === TripState.PAUSED) return;
 
         const mode = getSelectedMode();
         const destPos = destinationMarker.getPosition();
@@ -589,10 +722,11 @@ const EcoMap = (() => {
     function renderInteractiveRoutes(result, mode, isBikeFallback = false) {
         const container = document.getElementById('results-content');
         container.innerHTML = '';
-        selectedRouteIndex = 0;
+        selectedRouteIndex = -1;
+        hasUserSelectedRoute = false;
 
         const routesToShow = result.routes.slice(0, 3);
-        const themeColor = (mode === 'DRIVING') ? '#3B82F6' : '#10B981';
+        const palette = MODE_COLORS[mode] || MODE_COLORS.DRIVING;
 
         // Bike fallback: walking routes ÷ 3 for cycling speed (~15km/h vs ~5km/h)
         const BIKE_SPEED_FACTOR = 3;
@@ -611,7 +745,9 @@ const EcoMap = (() => {
                 displayDuration = formatDuration(bikeSecs);
             }
 
-            const isBest = index === 0;
+            // First route is thicker to hint "recommended", but NOT selected yet
+            const isMain = index === 0;
+            const routeShade = palette.shades[Math.min(index, palette.shades.length - 1)];
 
             // Create DirectionsRenderer for this route
             const renderer = new google.maps.DirectionsRenderer({
@@ -620,25 +756,29 @@ const EcoMap = (() => {
                 routeIndex: index,
                 suppressMarkers: true,
                 polylineOptions: {
-                    strokeColor: isBest ? themeColor : '#9CA3AF',
-                    strokeWeight: isBest ? 6 : 4,
-                    strokeOpacity: isBest ? 0.9 : 0.5,
-                    zIndex: isBest ? 10 : 1
+                    strokeColor: routeShade,
+                    strokeWeight: isMain ? 6 : 4,
+                    strokeOpacity: isMain ? 0.85 : 0.5,
+                    zIndex: isMain ? 5 : 1
                 }
             });
 
             // Build route card
             const card = document.createElement('div');
-            card.className = `eco-route-card ${isBest ? 'eco-route-card--active' : ''}`;
+            card.className = 'eco-route-card';
             card.setAttribute('role', 'button');
             card.setAttribute('tabindex', '0');
 
-            const emissionClass = emissions === 0 ? 'eco-badge--green' : (isBest ? 'eco-badge--blue' : 'eco-badge--gray');
+            const emissionClass = emissions === 0
+                ? 'eco-badge--green'
+                : (index === 0 ? 'eco-badge--blue' : 'eco-badge--gray');
             const modeIcon = getModeIcon(mode);
 
+            // Color dot to visually match the polyline shade
             card.innerHTML = `
                 <div class="eco-route-card__header">
                     <div class="eco-route-card__title">
+                        <span class="eco-route-dot" style="background:${routeShade}"></span>
                         <i class="bi ${modeIcon}"></i>
                         <strong>${route.summary || 'Traseu Alternativ'}</strong>
                     </div>
@@ -652,50 +792,69 @@ const EcoMap = (() => {
 
             container.appendChild(card);
 
-            // Store route data including the full result for re-rendering
+            // Store route data
             currentRoutesData.push({
-                index, renderer, card, themeColor,
-                inactiveColor: '#9CA3AF',
-                directions: result  // keep reference for route re-selection
+                index,
+                renderer,
+                card,
+                shade: routeShade,
+                palette,
+                directions: result,
+                mode
             });
 
             // Interactive events
-            card.addEventListener('click', () => selectRoute(index, mode));
+            card.addEventListener('click', () => selectRoute(index));
             card.addEventListener('mouseenter', () => hoverRoute(index, true));
             card.addEventListener('mouseleave', () => hoverRoute(index, false));
         });
+
+        // ── Inject Start Trip button after route cards ──
+        renderStartTripButton(container);
     }
 
-    function selectRoute(clickedIndex, mode) {
-        selectedRouteIndex = clickedIndex;
+    function selectRoute(clickedIndex) {
+        // Block route changes during active navigation
+        if (tripState === TripState.NAVIGATING || tripState === TripState.PAUSED) return;
 
-        // DirectionsRenderer.setOptions doesn't visually refresh polylines reliably.
-        // Recreate each renderer with the correct style for guaranteed visual update.
+        selectedRouteIndex = clickedIndex;
+        hasUserSelectedRoute = true;
+        setTripState(TripState.ROUTE_SELECTED);
+
+        // Enable the Start Trip button now that a route is selected
+        const startBtn = document.getElementById('start-trip-btn');
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.classList.add('eco-start-btn--ready');
+        }
+
+        // Recreate each renderer with updated polyline styles.
+        // Selected route → base color, thick, high opacity, high z-index.
+        // Others → their shade, thinner, lower opacity.
         currentRoutesData.forEach(data => {
             const isSelected = data.index === clickedIndex;
 
-            // Remove old renderer from the map
             data.renderer.setMap(null);
 
-            // Recreate with updated polyline style
             data.renderer = new google.maps.DirectionsRenderer({
                 map,
                 directions: data.directions,
                 routeIndex: data.index,
                 suppressMarkers: true,
                 polylineOptions: {
-                    strokeColor: isSelected ? data.themeColor : data.inactiveColor,
-                    strokeWeight: isSelected ? 6 : 4,
-                    strokeOpacity: isSelected ? 0.9 : 0.5,
+                    strokeColor: isSelected ? data.palette.base : data.shade,
+                    strokeWeight: isSelected ? 7 : 4,
+                    strokeOpacity: isSelected ? 0.95 : 0.45,
                     zIndex: isSelected ? 10 : 1
                 }
             });
 
-            // Update card style
+            data.card.classList.toggle('eco-route-card--active', isSelected);
+            // Dynamic border color matching the mode palette
             if (isSelected) {
-                data.card.classList.add('eco-route-card--active');
+                data.card.style.setProperty('--active-route-color', data.palette.base);
             } else {
-                data.card.classList.remove('eco-route-card--active');
+                data.card.style.removeProperty('--active-route-color');
             }
         });
     }
@@ -705,7 +864,6 @@ const EcoMap = (() => {
 
         const data = currentRoutesData[hoveredIndex];
 
-        // Recreate renderer for proper visual update on hover
         data.renderer.setMap(null);
         data.renderer = new google.maps.DirectionsRenderer({
             map,
@@ -713,24 +871,54 @@ const EcoMap = (() => {
             routeIndex: data.index,
             suppressMarkers: true,
             polylineOptions: {
-                strokeColor: isHovering ? '#4B5563' : data.inactiveColor,
+                strokeColor: isHovering ? data.palette.base : data.shade,
                 strokeWeight: isHovering ? 5 : 4,
-                strokeOpacity: isHovering ? 0.7 : 0.5,
+                strokeOpacity: isHovering ? 0.7 : 0.45,
                 zIndex: isHovering ? 5 : 1
             }
         });
 
-        if (isHovering) {
-            data.card.classList.add('eco-route-card--hover');
-        } else {
-            data.card.classList.remove('eco-route-card--hover');
-        }
+        data.card.classList.toggle('eco-route-card--hover', isHovering);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  8b. START TRIP BUTTON — appears after routes, disabled
+    //      until the user explicitly selects a route
+    // ═══════════════════════════════════════════════════════════
+
+    function renderStartTripButton(container) {
+        // Remove previous button if present
+        const prev = document.getElementById('start-trip-btn');
+        if (prev) prev.remove();
+
+        const btn = document.createElement('button');
+        btn.id = 'start-trip-btn';
+        btn.className = 'eco-start-btn';
+        btn.disabled = true;
+        btn.innerHTML = `<i class="bi bi-play-fill"></i> Start Trip`;
+
+        btn.addEventListener('click', () => {
+            if (!hasUserSelectedRoute || selectedRouteIndex < 0) return;
+            if (tripState !== TripState.ROUTE_SELECTED) return;
+
+            // Transition to NAVIGATING → launches turn-by-turn navigation
+            startTrip();
+        });
+
+        container.appendChild(btn);
     }
 
     /** Clear all rendered routes from map */
     function clearRoutes() {
         currentRoutesData.forEach(data => data.renderer.setMap(null));
         currentRoutesData = [];
+        selectedRouteIndex = -1;
+        hasUserSelectedRoute = false;
+
+        // Remove Start Trip button
+        const startBtn = document.getElementById('start-trip-btn');
+        if (startBtn) startBtn.remove();
+
         document.getElementById('eco-suggestion-container').innerHTML = '';
     }
 
@@ -789,6 +977,792 @@ const EcoMap = (() => {
                     </div>`;
             }
         });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  TRIP MANAGER — Navigation lifecycle & state transitions
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * START TRIP
+     * Transition: ROUTE_SELECTED → NAVIGATING
+     * - Lock route/destination selection (guards in selectRoute, setDestination)
+     * - Hide alternative routes, keep only selected
+     * - Enter navigation camera mode (zoom 18, tilt, follow user)
+     * - Start dedicated navigation watchPosition
+     * - Show floating navigation HUD
+     */
+    function startTrip() {
+        if (tripState !== TripState.ROUTE_SELECTED) return;
+        if (selectedRouteIndex < 0 || !currentRoutesData[selectedRouteIndex]) return;
+
+        setTripState(TripState.NAVIGATING);
+
+        const selected = currentRoutesData[selectedRouteIndex];
+        navRoute = selected.directions.routes[selected.index];
+        navStepIndex = 0;
+        navDistanceCovered = 0;
+        navLastLatLng = userLatLng ? { ...userLatLng } : null;
+        navStartTime = new Date();
+
+        // ── Hide alternative routes, keep only the selected one ──
+        currentRoutesData.forEach(data => {
+            if (data.index !== selectedRouteIndex) {
+                data.renderer.setMap(null);
+                data.card.style.display = 'none';
+            }
+        });
+
+        // ── Save current map state for restoration after trip ──
+        navPreZoom = map.getZoom();
+        navPreCenter = map.getCenter();
+        navPreTilt = (typeof map.getTilt === 'function') ? (map.getTilt() || 0) : 0;
+
+        // ── Enter navigation camera ──
+        enterNavCamera();
+
+        // ── Switch UI: hide planner panel, show nav HUD ──
+        togglePanel(false);
+        renderNavHud();
+
+        // ── Stop general live tracking, start navigation-specific tracking ──
+        stopLiveTracking();
+        startNavTracking();
+
+        // ── Backend: create trip record + start periodic sync ──
+        const destPos = destinationMarker ? destinationMarker.getPosition() : null;
+        TripService.start({
+            transportMode: selected.mode || 'DRIVING',
+            startLocation: document.getElementById('start-input')?.value || '',
+            endLocation: document.getElementById('dest-input')?.value || '',
+            startLatitude: userLatLng?.lat || 0,
+            startLongitude: userLatLng?.lng || 0,
+            endLatitude: destPos ? destPos.lat() : 0,
+            endLongitude: destPos ? destPos.lng() : 0,
+            totalRouteDistance: navRoute.legs[0].distance.value,
+            routeSummary: navRoute.summary || ''
+        }).then(res => {
+            if (res && res.tripId) {
+                activeTripId = res.tripId;
+                console.log('[TripService] Trip created, id:', activeTripId);
+            }
+        });
+        startPeriodicSync();
+
+        console.log('[EcoPath] Trip started', {
+            route: navRoute.summary,
+            steps: navRoute.legs[0].steps.length,
+            distance: navRoute.legs[0].distance.text,
+            duration: navRoute.legs[0].duration.text
+        });
+    }
+
+    /**
+     * PAUSE TRIP
+     * Transition: NAVIGATING → PAUSED
+     * - Stop GPS tracking (saves battery)
+     * - Keep all state intact (distance, step index, etc.)
+     * - Update HUD to show paused state with Resume button
+     */
+    function pauseTrip() {
+        if (tripState !== TripState.NAVIGATING) return;
+
+        setTripState(TripState.PAUSED);
+        stopNavTracking();
+        stopPeriodicSync();
+        updateNavHudPaused(true);
+        showLocationStatus('Navigare în pauză', 'info');
+
+        // Sync paused state to backend
+        syncTripUpdate(true);
+    }
+
+    /**
+     * RESUME TRIP
+     * Transition: PAUSED → NAVIGATING
+     * - Restart GPS tracking from current position
+     * - Re-enter navigation camera
+     */
+    function resumeTrip() {
+        if (tripState !== TripState.PAUSED) return;
+
+        setTripState(TripState.NAVIGATING);
+        startNavTracking();
+        enterNavCamera();
+        startPeriodicSync();
+        updateNavHudPaused(false);
+        showLocationStatus('Navigare reluată', 'success');
+
+        // Sync resumed state to backend
+        syncTripUpdate(false);
+    }
+
+    /**
+     * STOP TRIP (user-initiated abort)
+     * Transition: NAVIGATING | PAUSED → FINISHED
+     * - End tracking immediately
+     * - Save distance covered to localStorage
+     * - Restore normal map view
+     */
+    function stopTrip() {
+        if (tripState !== TripState.NAVIGATING && tripState !== TripState.PAUSED) return;
+
+        setTripState(TripState.FINISHED);
+        stopNavTracking();
+        stopPeriodicSync();
+
+        // Save partial trip to localStorage
+        saveTripLocally(false);
+
+        // Cancel trip on backend → show summary modal with server response
+        const payload = buildTripPayload();
+        TripService.cancel(payload).then(res => {
+            showTripSummaryModal(res, false);
+        });
+
+        showLocationStatus(
+            `Trip oprit — ${(navDistanceCovered / 1000).toFixed(2)} km parcurși`,
+            'info'
+        );
+
+        // Restore normal map mode
+        exitNavigationMode();
+    }
+
+    /**
+     * FINISH TRIP (arrival at destination)
+     * Transition: NAVIGATING → FINISHED
+     * - End tracking
+     * - Save complete trip data to localStorage
+     * - Show success feedback
+     */
+    function finishTrip() {
+        if (tripState !== TripState.NAVIGATING) return;
+
+        setTripState(TripState.FINISHED);
+        stopNavTracking();
+        stopPeriodicSync();
+
+        // Save completed trip to localStorage
+        saveTripLocally(true);
+
+        // Finish trip on backend → show summary modal with server response
+        const payload = buildTripPayload();
+        TripService.finish(payload).then(res => {
+            showTripSummaryModal(res, true);
+        });
+
+        const distKm = (navDistanceCovered / 1000).toFixed(2);
+        const elapsed = formatDuration(
+            Math.round((Date.now() - navStartTime.getTime()) / 1000)
+        );
+        showLocationStatus(`Ai ajuns! ${distKm} km în ${elapsed}`, 'success');
+
+        // Restore normal map mode
+        exitNavigationMode();
+    }
+
+    // ─── Navigation Camera ────────────────────────────────────
+
+    /**
+     * Enter Waze-like navigation camera:
+     * - Zoom 18 (street-level)
+     * - Tilt 45° for perspective (requires WebGL Vector Map / Map ID;
+     *   silently ignored on classic raster maps)
+     * - Center on user with downward offset so user appears
+     *   in the lower third — more road visible ahead
+     */
+    function enterNavCamera() {
+        map.setZoom(18);
+
+        // Tilt and heading only work with vector maps (WebGL / Map ID).
+        // On classic raster maps these calls are silently ignored.
+        if (typeof map.setTilt === 'function') map.setTilt(45);
+
+        if (userLatLng) {
+            centerOnUserNav(userLatLng);
+        }
+    }
+
+    /**
+     * Center map so user appears in the lower ~1/3 of the viewport.
+     * At zoom 18, 1° latitude ≈ 111,320m. We offset ~150m north
+     * so the view shows more road ahead.
+     */
+    function centerOnUserNav(latLng) {
+        const offsetDeg = 150 / 111320;
+        map.panTo({ lat: latLng.lat + offsetDeg, lng: latLng.lng });
+    }
+
+    /**
+     * Compute bearing from point A to B (degrees 0-360).
+     * Used to set map heading so the map faces the travel direction.
+     */
+    function computeBearing(from, to) {
+        const dLng = (to.lng - from.lng) * Math.PI / 180;
+        const lat1 = from.lat * Math.PI / 180;
+        const lat2 = to.lat * Math.PI / 180;
+        const y = Math.sin(dLng) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) -
+                  Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+        return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+    }
+
+    // ─── Navigation GPS Tracking ──────────────────────────────
+
+    /** Stop the general-purpose live tracking watcher */
+    function stopLiveTracking() {
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+    }
+
+    /**
+     * Start a dedicated watchPosition for navigation.
+     * Higher frequency, zero maximumAge for best GPS accuracy.
+     *
+     * On each position update:
+     *   1. Animate user marker smoothly
+     *   2. Accumulate distance covered (ignore GPS jumps > 200m)
+     *   3. Center map on user (with navigation offset)
+     *   4. Advance step if user passed current step endpoint
+     *   5. Rotate map heading toward next waypoint (vector maps)
+     *   6. Check arrival at destination (40m radius)
+     *   7. Update navigation HUD
+     */
+    function startNavTracking() {
+        if (navWatchId !== null) return; // already tracking
+
+        navWatchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude, accuracy } = position.coords;
+                const newLatLng = { lat: latitude, lng: longitude };
+
+                // Skip tiny movements to reduce jitter
+                if (userLatLng && getDistanceMeters(userLatLng, newLatLng) < 2) return;
+
+                const oldLatLng = userLatLng;
+                userLatLng = newLatLng;
+
+                // 1. Smooth marker animation
+                animateMarkerTo(userMarker, oldLatLng, newLatLng);
+                if (userAccuracyCircle) {
+                    userAccuracyCircle.setCenter(newLatLng);
+                    userAccuracyCircle.setRadius(accuracy);
+                }
+
+                // 2. Accumulate distance (ignore teleportation glitches)
+                if (navLastLatLng) {
+                    const delta = getDistanceMeters(navLastLatLng, newLatLng);
+                    if (delta < 200) {
+                        navDistanceCovered += delta;
+                    }
+                }
+                navLastLatLng = { ...newLatLng };
+
+                // 3. Center map with navigation offset
+                centerOnUserNav(newLatLng);
+
+                // 4. Advance step if near current step endpoint
+                advanceNavStep(newLatLng);
+
+                // 5. Set map heading toward next waypoint (vector maps only)
+                setNavHeading(newLatLng);
+
+                // 6. Check arrival at destination
+                checkArrival(newLatLng);
+
+                // 7. Update HUD
+                updateNavHud();
+            },
+            (error) => {
+                console.warn('[EcoPath] Nav tracking error:', error.message);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 0  // Always fresh position for navigation
+            }
+        );
+    }
+
+    /** Stop navigation-specific GPS tracking */
+    function stopNavTracking() {
+        if (navWatchId !== null) {
+            navigator.geolocation.clearWatch(navWatchId);
+            navWatchId = null;
+        }
+    }
+
+    // ─── Step Advancement ─────────────────────────────────────
+
+    /**
+     * Check if user has reached the end of the current step.
+     * If within NAV_STEP_ADVANCE_RADIUS (30m) of the step endpoint,
+     * advance navStepIndex to show the next instruction.
+     */
+    function advanceNavStep(latLng) {
+        if (!navRoute) return;
+        const steps = navRoute.legs[0].steps;
+        if (navStepIndex >= steps.length) return;
+
+        const stepEnd = steps[navStepIndex].end_location;
+        const dist = getDistanceMeters(latLng, {
+            lat: stepEnd.lat(),
+            lng: stepEnd.lng()
+        });
+
+        if (dist < NAV_STEP_ADVANCE_RADIUS && navStepIndex < steps.length - 1) {
+            navStepIndex++;
+        }
+    }
+
+    /**
+     * Rotate map to face direction of travel.
+     * Uses the current step's end_location as the look-ahead target.
+     * Only effective on WebGL vector maps with Map ID.
+     */
+    function setNavHeading(latLng) {
+        if (!navRoute || typeof map.setHeading !== 'function') return;
+        const steps = navRoute.legs[0].steps;
+        if (navStepIndex >= steps.length) return;
+
+        const target = steps[navStepIndex].end_location;
+        const bearing = computeBearing(latLng, {
+            lat: target.lat(),
+            lng: target.lng()
+        });
+        map.setHeading(bearing);
+    }
+
+    // ─── Arrival Detection ────────────────────────────────────
+
+    /**
+     * Check if user is within ARRIVAL_RADIUS (40m) of the destination.
+     *
+     * Design choice: show a "Finish Trip" button rather than auto-finishing.
+     * Auto-finish risks premature triggering from GPS bounce near the
+     * destination. A confirmation button gives the user explicit control
+     * while still appearing automatically when arrival is detected.
+     */
+    function checkArrival(latLng) {
+        if (!destinationMarker) return;
+        const destPos = destinationMarker.getPosition();
+        const dist = getDistanceMeters(latLng, {
+            lat: destPos.lat(),
+            lng: destPos.lng()
+        });
+
+        if (dist <= ARRIVAL_RADIUS) {
+            showArrivalPrompt();
+        }
+    }
+
+    /** Show "Finish Trip" button inside the nav HUD */
+    function showArrivalPrompt() {
+        if (!navHudEl) return;
+        // Only inject once
+        if (navHudEl.querySelector('.nav-btn--finish')) return;
+
+        const actionsBar = navHudEl.querySelector('.nav-hud__actions');
+        if (!actionsBar) return;
+
+        // Replace pause/stop with a single prominent Finish button
+        actionsBar.innerHTML = `
+            <button class="nav-btn nav-btn--finish" onclick="EcoMap.finishTrip()">
+                <i class="bi bi-flag-fill"></i> Finish Trip — Ai ajuns!
+            </button>
+        `;
+        showLocationStatus('Ești aproape de destinație!', 'success');
+    }
+
+    // ─── Navigation HUD ──────────────────────────────────────
+
+    /**
+     * Render the floating navigation HUD overlay.
+     * Dynamically created and appended to #map-container.
+     * Shows: current instruction, remaining distance, ETA,
+     * distance covered, and Pause / Stop action buttons.
+     */
+    function renderNavHud() {
+        removeNavHud();
+
+        const hud = document.createElement('div');
+        hud.id = 'nav-hud';
+        hud.className = 'nav-hud';
+
+        const step = navRoute?.legs[0]?.steps[navStepIndex];
+        const instruction = step ? stripHtml(step.instructions) : 'Începe navigarea...';
+        const remaining = getRemainingDistanceText();
+        const eta = getEtaText();
+
+        hud.innerHTML = `
+            <div class="nav-hud__instruction">
+                <i class="bi bi-navigation-fill"></i>
+                <span id="nav-instruction-text">${instruction}</span>
+            </div>
+            <div class="nav-hud__stats">
+                <div class="nav-hud__stat">
+                    <span class="nav-hud__value" id="nav-remaining">${remaining}</span>
+                    <span class="nav-hud__label">Rămas</span>
+                </div>
+                <div class="nav-hud__stat">
+                    <span class="nav-hud__value" id="nav-eta">${eta}</span>
+                    <span class="nav-hud__label">ETA</span>
+                </div>
+                <div class="nav-hud__stat">
+                    <span class="nav-hud__value" id="nav-covered">${(navDistanceCovered / 1000).toFixed(1)} km</span>
+                    <span class="nav-hud__label">Parcurs</span>
+                </div>
+            </div>
+            <div class="nav-hud__actions">
+                <button class="nav-btn nav-btn--pause" id="nav-pause-btn" onclick="EcoMap.pauseTrip()">
+                    <i class="bi bi-pause-fill"></i> Pauză
+                </button>
+                <button class="nav-btn nav-btn--stop" onclick="EcoMap.stopTrip()">
+                    <i class="bi bi-stop-fill"></i> Stop
+                </button>
+            </div>
+        `;
+
+        document.getElementById('map-container').appendChild(hud);
+        navHudEl = hud;
+    }
+
+    /** Update HUD values on each location tick */
+    function updateNavHud() {
+        if (!navHudEl || !navRoute) return;
+
+        const step = navRoute.legs[0].steps[navStepIndex];
+
+        // Current instruction
+        const instrEl = navHudEl.querySelector('#nav-instruction-text');
+        if (instrEl && step) {
+            instrEl.textContent = stripHtml(step.instructions);
+        }
+
+        // Remaining distance
+        const remEl = navHudEl.querySelector('#nav-remaining');
+        if (remEl) remEl.textContent = getRemainingDistanceText();
+
+        // ETA
+        const etaEl = navHudEl.querySelector('#nav-eta');
+        if (etaEl) etaEl.textContent = getEtaText();
+
+        // Distance covered
+        const covEl = navHudEl.querySelector('#nav-covered');
+        if (covEl) covEl.textContent = `${(navDistanceCovered / 1000).toFixed(1)} km`;
+    }
+
+    /** Toggle HUD pause/resume button appearance */
+    function updateNavHudPaused(isPaused) {
+        if (!navHudEl) return;
+        navHudEl.classList.toggle('nav-hud--paused', isPaused);
+
+        const pauseBtn = navHudEl.querySelector('#nav-pause-btn');
+        if (pauseBtn) {
+            if (isPaused) {
+                pauseBtn.innerHTML = `<i class="bi bi-play-fill"></i> Reia`;
+                pauseBtn.setAttribute('onclick', 'EcoMap.resumeTrip()');
+            } else {
+                pauseBtn.innerHTML = `<i class="bi bi-pause-fill"></i> Pauză`;
+                pauseBtn.setAttribute('onclick', 'EcoMap.pauseTrip()');
+            }
+        }
+    }
+
+    /** Remove nav HUD from DOM */
+    function removeNavHud() {
+        const el = document.getElementById('nav-hud');
+        if (el) el.remove();
+        navHudEl = null;
+    }
+
+    // ─── Navigation Helpers ──────────────────────────────────
+
+    /**
+     * Calculate remaining route distance by summing step distances
+     * from the current step index onward (route-aware, not straight-line).
+     */
+    function getRemainingDistanceText() {
+        if (!navRoute) return '—';
+        const steps = navRoute.legs[0].steps;
+        let remaining = 0;
+        for (let i = navStepIndex; i < steps.length; i++) {
+            remaining += steps[i].distance.value;
+        }
+        return remaining >= 1000
+            ? `${(remaining / 1000).toFixed(1)} km`
+            : `${Math.round(remaining)} m`;
+    }
+
+    /**
+     * Calculate ETA by summing remaining step durations
+     * and adding to the current time.
+     */
+    function getEtaText() {
+        if (!navRoute) return '—';
+        const steps = navRoute.legs[0].steps;
+        let remainingSecs = 0;
+        for (let i = navStepIndex; i < steps.length; i++) {
+            remainingSecs += steps[i].duration.value;
+        }
+        const eta = new Date(Date.now() + remainingSecs * 1000);
+        return eta.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    /** Strip HTML tags from Google Directions step instructions */
+    function stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    }
+
+    /**
+     * Save trip data to localStorage.
+     * Stored as an array of trip records for future backend sync.
+     */
+    function saveTripLocally(completed) {
+        const elapsed = navStartTime
+            ? Math.round((Date.now() - navStartTime.getTime()) / 1000)
+            : 0;
+
+        const tripRecord = {
+            id: Date.now(),
+            date: new Date().toISOString(),
+            completed,
+            mode: currentRoutesData[selectedRouteIndex]?.mode || 'DRIVING',
+            routeSummary: navRoute?.summary || '',
+            distanceCovered: Math.round(navDistanceCovered),           // meters
+            totalRouteDistance: navRoute?.legs[0]?.distance?.value || 0, // meters
+            elapsedSeconds: elapsed,
+            origin: userLatLng ? { ...userLatLng } : null,
+            destination: destinationMarker
+                ? {
+                    lat: destinationMarker.getPosition().lat(),
+                    lng: destinationMarker.getPosition().lng()
+                }
+                : null
+        };
+
+        const trips = JSON.parse(localStorage.getItem('ecopath_trips') || '[]');
+        trips.push(tripRecord);
+        localStorage.setItem('ecopath_trips', JSON.stringify(trips));
+
+        console.log('[EcoPath] Trip saved locally', tripRecord);
+    }
+
+    // ─── Backend Sync Helpers ─────────────────────────────────
+
+    /**
+     * Build the common payload for update/finish/cancel API calls.
+     * Calculates elapsed time and average speed from nav state.
+     */
+    function buildTripPayload() {
+        const elapsed = navStartTime
+            ? Math.round((Date.now() - navStartTime.getTime()) / 1000)
+            : 0;
+        const avgSpeed = elapsed > 0
+            ? (navDistanceCovered / elapsed) * 3.6  // m/s → km/h
+            : 0;
+
+        return {
+            tripId: activeTripId,
+            distanceCovered: Math.round(navDistanceCovered),
+            duration: elapsed,
+            averageSpeed: Math.round(avgSpeed * 10) / 10
+        };
+    }
+
+    /**
+     * Send a periodic status update to the backend.
+     * Called by the sync interval and on pause/resume events.
+     */
+    function syncTripUpdate(isPaused = false) {
+        if (!activeTripId) return;
+        const payload = { ...buildTripPayload(), isPaused };
+        TripService.update(payload).then(res => {
+            if (res) console.log('[TripService] Sync OK', res);
+        });
+    }
+
+    /** Start the periodic 20-second sync interval */
+    function startPeriodicSync() {
+        stopPeriodicSync();
+        syncIntervalId = setInterval(() => {
+            if (tripState === TripState.NAVIGATING) {
+                syncTripUpdate(false);
+            }
+        }, SYNC_INTERVAL_MS);
+    }
+
+    /** Stop the periodic sync interval */
+    function stopPeriodicSync() {
+        if (syncIntervalId !== null) {
+            clearInterval(syncIntervalId);
+            syncIntervalId = null;
+        }
+    }
+
+    // ─── Trip Summary Modal ──────────────────────────────────
+
+    /**
+     * Display a modal summarizing the completed or canceled trip.
+     * Uses server response data if available, falls back to local nav state.
+     *
+     * @param {object|null} serverData — response from TripService.finish/cancel
+     * @param {boolean} completed — true = arrived, false = stopped early
+     */
+    function showTripSummaryModal(serverData, completed) {
+        // Remove any existing modal
+        const prev = document.getElementById('trip-summary-modal');
+        if (prev) prev.remove();
+
+        const elapsed = navStartTime
+            ? Math.round((Date.now() - navStartTime.getTime()) / 1000)
+            : 0;
+        const totalRoute = navRoute?.legs[0]?.distance?.value || 0;
+
+        // Prefer server data, fall back to local calculations
+        const distKm      = serverData?.distance ?? (navDistanceCovered / 1000);
+        const duration     = serverData?.duration ?? elapsed;
+        const co2Saved     = serverData?.co2Saved ?? 0;
+        const calories     = serverData?.caloriesBurned ?? 0;
+        const avgSpeed     = serverData?.averageSpeed ?? (elapsed > 0 ? (navDistanceCovered / elapsed) * 3.6 : 0);
+        const completion   = serverData?.completionPercent ?? (totalRoute > 0 ? Math.min(100, (navDistanceCovered / totalRoute) * 100) : 0);
+
+        const mode = currentRoutesData[selectedRouteIndex]?.mode || 'DRIVING';
+        const palette = MODE_COLORS[mode] || MODE_COLORS.DRIVING;
+        const modeIcon = getModeIcon(mode);
+        const modeLabel = { DRIVING: 'Mașină', WALKING: 'Pe jos', BICYCLING: 'Bicicletă', TRANSIT: 'Transport public' }[mode] || mode;
+
+        const statusIcon = completed ? 'bi-flag-fill' : 'bi-exclamation-triangle-fill';
+        const statusText = completed ? 'Trip finalizat!' : 'Trip oprit';
+        const statusClass = completed ? 'trip-summary--completed' : 'trip-summary--canceled';
+
+        const modal = document.createElement('div');
+        modal.id = 'trip-summary-modal';
+        modal.className = 'trip-summary-overlay';
+        modal.innerHTML = `
+            <div class="trip-summary ${statusClass}">
+                <div class="trip-summary__header" style="--summary-color: ${palette.base}">
+                    <i class="bi ${statusIcon}"></i>
+                    <h3>${statusText}</h3>
+                    ${!completed ? `<span class="trip-summary__completion">${completion.toFixed(1)}% completat</span>` : ''}
+                </div>
+                <div class="trip-summary__mode">
+                    <i class="bi ${modeIcon}"></i> ${modeLabel}
+                    ${navRoute?.summary ? `<span class="trip-summary__route">— ${navRoute.summary}</span>` : ''}
+                </div>
+                <div class="trip-summary__grid">
+                    <div class="trip-summary__stat">
+                        <span class="trip-summary__value">${distKm.toFixed(2)} km</span>
+                        <span class="trip-summary__label">Distanță parcursă</span>
+                    </div>
+                    <div class="trip-summary__stat">
+                        <span class="trip-summary__value">${formatDuration(duration)}</span>
+                        <span class="trip-summary__label">Durată</span>
+                    </div>
+                    <div class="trip-summary__stat">
+                        <span class="trip-summary__value">${avgSpeed.toFixed(1)} km/h</span>
+                        <span class="trip-summary__label">Viteză medie</span>
+                    </div>
+                    <div class="trip-summary__stat">
+                        <span class="trip-summary__value">${co2Saved.toFixed(2)} kg</span>
+                        <span class="trip-summary__label">CO₂ economisit</span>
+                    </div>
+                    ${calories > 0 ? `
+                    <div class="trip-summary__stat">
+                        <span class="trip-summary__value">${Math.round(calories)} kcal</span>
+                        <span class="trip-summary__label">Calorii arse</span>
+                    </div>` : ''}
+                    ${!completed ? `
+                    <div class="trip-summary__stat">
+                        <span class="trip-summary__value">${completion.toFixed(1)}%</span>
+                        <span class="trip-summary__label">Progres rută</span>
+                    </div>` : ''}
+                </div>
+                <button class="trip-summary__close" id="close-trip-summary">
+                    <i class="bi bi-check-lg"></i> Închide
+                </button>
+            </div>
+        `;
+
+        document.getElementById('map-container').appendChild(modal);
+
+        // Animate in
+        requestAnimationFrame(() => modal.classList.add('trip-summary-overlay--visible'));
+
+        // Close handler
+        document.getElementById('close-trip-summary').addEventListener('click', () => {
+            modal.classList.remove('trip-summary-overlay--visible');
+            setTimeout(() => modal.remove(), 300);
+        });
+
+        // Also close on overlay click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('trip-summary-overlay--visible');
+                setTimeout(() => modal.remove(), 300);
+            }
+        });
+    }
+
+    /**
+     * Restore normal map mode after navigation ends.
+     * - Remove nav HUD
+     * - Restore zoom / tilt / heading
+     * - Show side panel
+     * - Re-show all route alternatives
+     * - Restart general live tracking
+     * - Reset trip state to IDLE
+     */
+    function exitNavigationMode() {
+        removeNavHud();
+
+        // Restore map camera
+        map.setZoom(navPreZoom || 14);
+        if (typeof map.setTilt === 'function') map.setTilt(navPreTilt || 0);
+        if (typeof map.setHeading === 'function') map.setHeading(0);
+        if (navPreCenter) map.setCenter(navPreCenter);
+
+        // Re-show all routes and cards
+        currentRoutesData.forEach(data => {
+            data.renderer.setMap(map);
+            data.card.style.display = '';
+            data.card.classList.remove('eco-route-card--active');
+        });
+
+        // Show planner panel again
+        togglePanel(true);
+
+        // Reset navigation state
+        navRoute = null;
+        navStepIndex = 0;
+        navDistanceCovered = 0;
+        navLastLatLng = null;
+        navStartTime = null;
+
+        // Reset backend sync state
+        activeTripId = null;
+        stopPeriodicSync();
+
+        // Restart general tracking
+        startLiveTracking();
+
+        // Back to IDLE (user can pick a new route)
+        setTripState(TripState.IDLE);
+        hasUserSelectedRoute = false;
+        selectedRouteIndex = -1;
+
+        // Reset Start Trip button
+        const startBtn = document.getElementById('start-trip-btn');
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.classList.remove('eco-start-btn--ready', 'eco-start-btn--started');
+            startBtn.innerHTML = `<i class="bi bi-play-fill"></i> Start Trip`;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -892,7 +1866,11 @@ const EcoMap = (() => {
 
     return {
         init,
-        togglePanel
+        togglePanel,
+        pauseTrip,
+        resumeTrip,
+        stopTrip,
+        finishTrip
     };
 
 })(); // End IIFE

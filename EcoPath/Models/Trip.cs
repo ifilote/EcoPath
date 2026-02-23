@@ -16,5 +16,16 @@ namespace EcoPath.Models
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public bool IsVerified { get; set; }
+
+        // ── Live-tracking fields (Phase 3) ──
+        public TripStatus Status { get; set; } = TripStatus.Active;
+        public double StartLatitude { get; set; }
+        public double StartLongitude { get; set; }
+        public double EndLatitude { get; set; }
+        public double EndLongitude { get; set; }
+        public double DistanceCovered { get; set; }
+        public double TotalRouteDistance { get; set; }
+        public double AverageSpeed { get; set; }
+        public string RouteSummary { get; set; } = string.Empty;
     }
 }
