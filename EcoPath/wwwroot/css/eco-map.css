@@ -1,0 +1,690 @@
+/* ═══════════════════════════════════════════════════════════════
+ *  EcoPath Map — Complete Responsive Stylesheet
+ *  Mobile-first, Glassmorphism, Modern UI
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* ─── CSS Custom Properties for the map page ─── */
+:root {
+    --map-panel-bg: rgba(255, 255, 255, 0.92);
+    --map-panel-border: rgba(255, 255, 255, 0.5);
+    --map-panel-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --map-panel-radius: 20px;
+    --map-panel-width: 380px;
+    --map-accent: #10B981;
+    --map-accent-dark: #059669;
+    --map-blue: #3B82F6;
+    --map-red: #EF4444;
+    --map-gray: #6B7280;
+    --map-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── 1. Full-screen map layout — Override page container ─── */
+.eco-map-page main {
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+}
+
+.eco-map-page .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+}
+
+.eco-map-page footer {
+    display: none;
+}
+
+/* ─── 2. Map Container ─── */
+#map-container {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 76px);
+    overflow: hidden;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* ─── 3. Loading Overlay ─── */
+#map-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    gap: 16px;
+    transition: opacity var(--map-transition);
+}
+
+.eco-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: var(--map-accent);
+    border-radius: 50%;
+    animation: eco-spin 0.8s linear infinite;
+}
+
+@keyframes eco-spin {
+    to { transform: rotate(360deg); }
+}
+
+#map-loader span {
+    font-size: 0.9rem;
+    color: var(--map-gray);
+    font-weight: 500;
+}
+
+/* ─── 4. Location Status Toast ─── */
+.eco-location-status {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: all var(--map-transition);
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.eco-location-status--visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.eco-location-status--success {
+    background: #059669;
+    color: white;
+}
+
+.eco-location-status--error {
+    background: #DC2626;
+    color: white;
+}
+
+.eco-location-status--info {
+    background: #2563EB;
+    color: white;
+}
+
+/* ─── 5. Floating Panel — Glassmorphism ─── */
+.eco-panel {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: var(--map-panel-width);
+    max-height: calc(100vh - 120px);
+    background: var(--map-panel-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--map-panel-border);
+    border-radius: var(--map-panel-radius);
+    box-shadow: var(--map-panel-shadow);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--map-transition), opacity var(--map-transition);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.eco-panel.minimized {
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    pointer-events: none;
+}
+
+.eco-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 0;
+}
+
+.eco-panel__title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #111827;
+    font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+    margin: 0;
+}
+
+.eco-panel__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background var(--map-transition);
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.eco-panel__close:hover {
+    background: #e5e7eb;
+}
+
+.eco-panel__body {
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* ─── 6. Toggle Panel Button (shown when minimized) ─── */
+#toggle-panel-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 15;
+    background: white;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform var(--map-transition), box-shadow var(--map-transition);
+    border: none;
+}
+
+#toggle-panel-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* ─── 7. Input Fields ─── */
+.eco-field-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.eco-input-group {
+    display: flex;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    transition: border-color var(--map-transition), box-shadow var(--map-transition);
+}
+
+.eco-input-group:focus-within {
+    border-color: var(--map-accent);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.eco-input-group input {
+    flex: 1;
+    border: none;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    background: transparent;
+    outline: none;
+    min-width: 0;
+    color: #111827;
+    -webkit-text-fill-color: #111827;
+    opacity: 1;
+}
+
+.eco-input-group input::placeholder {
+    color: #9ca3af;
+    -webkit-text-fill-color: #9ca3af;
+}
+
+.eco-input-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    background: #f9fafb;
+    color: var(--map-gray);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+/* ─── 8. Start location (read-only indicator) ─── */
+.eco-start-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: #166534;
+}
+
+.eco-start-indicator i {
+    font-size: 1.1rem;
+    color: var(--map-accent);
+}
+
+.eco-start-indicator input {
+    border: none;
+    background: transparent;
+    flex: 1;
+    font-size: 0.85rem;
+    color: #166534;
+    -webkit-text-fill-color: #166534;
+    opacity: 1;
+    outline: none;
+    min-width: 0;
+}
+
+/* ─── 9. Transport Mode Buttons ─── */
+.eco-transport-bar {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    background: #f3f4f6;
+    border-radius: 14px;
+}
+
+.transport-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #6b7280;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all var(--map-transition);
+    position: relative;
+}
+
+.transport-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.6);
+    color: #374151;
+}
+
+.transport-btn.active {
+    background: white;
+    color: var(--map-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+}
+
+.transport-btn .btn-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: none;
+}
+
+/* ─── 10. Locate Me Button (floating on map) ─── */
+#locate-me-btn {
+    position: absolute;
+    bottom: 100px;
+    right: 16px;
+    z-index: 15;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    color: #4285F4;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--map-transition);
+}
+
+#locate-me-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.18);
+}
+
+#locate-me-btn:active {
+    transform: scale(0.95);
+}
+
+/* ─── 11. Results Container ─── */
+.eco-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.eco-results__title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.eco-hidden {
+    display: none !important;
+}
+
+/* ─── 12. Route Cards ─── */
+.eco-route-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: white;
+    cursor: pointer;
+    transition: all var(--map-transition);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.eco-route-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.eco-route-card--active {
+    border-color: var(--map-accent);
+    background: #f0fdf4;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+}
+
+.eco-route-card--hover {
+    background: #f9fafb;
+}
+
+.eco-route-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.eco-route-card__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #111827;
+    min-width: 0;
+}
+
+.eco-route-card__title strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eco-route-card--active .eco-route-card__title {
+    color: #065f46;
+}
+
+.eco-route-card__details {
+    display: flex;
+    gap: 16px;
+    font-size: 0.78rem;
+    color: #6b7280;
+}
+
+.eco-route-card__details i {
+    margin-right: 3px;
+}
+
+/* ─── 13. Badges ─── */
+.eco-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.eco-badge--green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.eco-badge--blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.eco-badge--gray {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* ─── 14. Eco Suggestion Alert Cards ─── */
+.eco-suggestion {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%);
+    border: 1px solid #a7f3d0;
+    margin-top: 8px;
+    animation: eco-slide-in 0.3s ease-out;
+}
+
+@keyframes eco-slide-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.eco-suggestion__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--map-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.eco-suggestion__content strong {
+    font-size: 0.8rem;
+    color: #065f46;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.eco-suggestion__content p {
+    font-size: 0.78rem;
+    color: #374151;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ─── 15. Loading state inside results ─── */
+.eco-loading-routes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    color: var(--map-gray);
+    font-size: 0.85rem;
+}
+
+.eco-no-routes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    color: var(--map-red);
+    font-size: 0.85rem;
+    background: #fef2f2;
+    border-radius: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+ *  16. RESPONSIVE DESIGN — Mobile-first breakpoints
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tablets (< 768px) ── */
+@media (max-width: 768px) {
+    #map-container {
+        height: calc(100vh - 60px);
+    }
+
+    .eco-panel {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 55vh;
+        border-radius: var(--map-panel-radius) var(--map-panel-radius) 0 0;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .eco-panel.minimized {
+        transform: translateY(calc(100% + 16px));
+    }
+
+    #toggle-panel-btn {
+        top: auto;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    #toggle-panel-btn:hover {
+        transform: translateX(-50%) scale(1.08);
+    }
+
+    .eco-transport-bar {
+        gap: 4px;
+    }
+
+    .transport-btn {
+        padding: 12px 0;
+        font-size: 1.2rem;
+    }
+
+    /* Show mode labels on mobile for clarity */
+    .transport-btn .btn-label {
+        display: block;
+    }
+
+    .eco-location-status {
+        bottom: auto;
+        top: 12px;
+        font-size: 0.78rem;
+    }
+
+    #locate-me-btn {
+        bottom: 60vh;
+        right: 12px;
+    }
+}
+
+/* ── Small phones (< 480px) ── */
+@media (max-width: 480px) {
+    .eco-panel__body {
+        padding: 12px 16px 16px;
+        gap: 10px;
+    }
+
+    .eco-panel__header {
+        padding: 16px 16px 0;
+    }
+
+    .eco-panel__title {
+        font-size: 1.1rem;
+    }
+
+    .eco-route-card__header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .eco-route-card__details {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+/* ── Large desktop (panel stays fixed) ── */
+@media (min-width: 1200px) {
+    :root {
+        --map-panel-width: 420px;
+    }
+}
+
+/* ─── 17. Scrollbar styling ─── */
+.eco-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.eco-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.eco-panel::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+.eco-panel::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* ─── 18. Google Maps Autocomplete Dropdown override ─── */
+.pac-container {
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    margin-top: 4px;
+    font-family: inherit;
+}
+
+.pac-item {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-top: 1px solid #f3f4f6;
+}
+
+.pac-item:first-child {
+    border-top: none;
+}
+
+.pac-item:hover {
+    background: #f0fdf4;
+}
+
+.pac-item-selected {
+    background: #ecfdf5;
+}
