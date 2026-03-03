@@ -31,20 +31,33 @@ builder.Services.AddScoped<IWeatherService, WeatherService>();
 // Singleton: QuoteService holds static data + thread-safe last-index tracker
 builder.Services.AddSingleton<IQuoteService, QuoteService>();
 
+// ═══════ ML.NET RECOMMENDATION SERVICE ═══════
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+
 var app = builder.Build();
 
-
+// ═══════ INITIALIZE ML MODEL ON STARTUP ═══════
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
+        // Migrate database
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        await dbContext.Database.MigrateAsync();
+
+        // Initialize DB with seed data
         await DbInitializer.Initialize(services);
+
+        // Initialize ML recommendation engine (blocking)
+        var recommendationService = services.GetRequiredService<IRecommendationService>();
+        await recommendationService.InitializeAsync();
+
+        services.GetRequiredService<ILogger<Program>>().LogInformation("✓ All services initialized successfully.");
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "A apărut o eroare în timpul seed-ului bazei de date.");
+        services.GetRequiredService<ILogger<Program>>().LogError(ex, "❌ Error during startup initialization.");
     }
 }
 
